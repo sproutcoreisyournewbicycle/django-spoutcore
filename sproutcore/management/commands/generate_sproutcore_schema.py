@@ -15,7 +15,7 @@ from sproutcore.transform import ModelTransform
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
-        make_option('-d', '--directory', default='sproutcore/framework/', dest='directory',
+        make_option('-d', '--directory', default='sproutcore/', dest='directory',
             help='Specifies the output directory for the files.'),
         make_option('-e', '--exclude', dest='exclude', action='append', default=[],
             help='App to exclude (use multiple --exclude to exclude multiple apps).'),
@@ -26,7 +26,7 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
 
-        directory = options.get('directory', 'sproutcore/framework/')
+        directory = options.get('directory', 'sproutcore/') + 'frameworks/'
         exclude = options.get('exclude', [])
 
         excluded_apps = [get_app(app_label) for app_label in exclude]
