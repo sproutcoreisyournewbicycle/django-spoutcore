@@ -78,12 +78,13 @@ class Command(NoArgsCommand):
             except OSError:
                 os.chdir(app_name)
             for model in model_list:
-                # Create the model's file, if it doesn't already exist.
-    #            import pdb; pdb.set_trace()
+                
+
                 file_name = inflector.underscore(model.__name__) + ".js"
                 generated_folder_path = settings.PROJECT_ROOT + "/sproutcore/frameworks/" + app_name + "/" "_generated/"
                 generated_file_name = "_" + file_name
-   #             import pdb; pdb.set_trace()
+
+                # Create the model's file, if it doesn't already exist.
                 if not os.path.exists(file_name):
                     f = open(file_name, 'wb')
                     t = loader.get_template('sc_utils/user.html')
@@ -93,6 +94,7 @@ class Command(NoArgsCommand):
                     f.close()
                     
                     #open and write the generated file as well
+                if not os.path.exists(generated_folder_path + generated_file_name):
                     os.chdir(generated_folder_path)
                     f = open(generated_file_name, 'wb')
                     t = loader.get_template('sc_utils/sproutcore_generated.html')
@@ -104,7 +106,7 @@ class Command(NoArgsCommand):
                     rendered = t.render(c)
                     f.write(rendered)
                     f.close()
-                    os.chdir('..')
+                    os.chdir('..')#Go back up a dir so we can generate the next file
 
                     
                     if verbosity >= 2:
