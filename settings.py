@@ -1,7 +1,10 @@
 # Django settings for djangocore project.
-
+import os
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
@@ -66,14 +69,17 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'djangocore.urls'
 
 TEMPLATE_DIRS = (
+    os.path.join(PROJECT_ROOT, 'templates'),
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
 )
+
 
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'djangocore.sc_utils',
 )
