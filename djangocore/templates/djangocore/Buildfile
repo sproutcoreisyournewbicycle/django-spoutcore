@@ -1,6 +1,6 @@
 {% autoescape off %}
 // Wrapper frameworks
-config :'{{ wrapper_framework }}', :required => [
+config :'{{ wrapper_fraemework }}', :required => [
   {{ frameworks }}
 ]
 
