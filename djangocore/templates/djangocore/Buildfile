@@ -1,0 +1,7 @@
+{% autoescape off %}
+// Wrapper frameworks
+config :'{{ wrapper_framework }}', :required => [
+  {{ frameworks }}
+]
+
+{% endautoescape %}
