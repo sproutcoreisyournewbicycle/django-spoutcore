@@ -4,7 +4,7 @@ from django.utils.simplejson import JSONEncoder
 from django.utils.encoding import smart_str
 
 # Intra-app dependencies.
-from sproutcore.utils import camelize
+from djangocore.utils import camelize
 
 class Comments(list):
     """A list of comments that knows how to render itself."""
@@ -345,6 +345,4 @@ class ModelTransform(object):
     def __str__(self):
         return self.render()
 
-from django.contrib.auth.models import User as U
-from sproutcore.transform import ModelTransform as T
  

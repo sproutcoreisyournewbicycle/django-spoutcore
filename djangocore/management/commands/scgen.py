@@ -10,8 +10,8 @@ from django.template.loader import render_to_string
 from django.conf import settings
 
 # Intra-app dependencies.
-from sproutcore.utils import camelize, underscore
-from sproutcore.transform import ModelTransform
+from djangocore.utils import camelize, underscore
+from djangocore.transform import ModelTransform
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -25,8 +25,9 @@ class Command(BaseCommand):
     args = '[appname ...]'
 
     def handle(self, *app_labels, **options):
-
-        directory = options.get('directory', 'sproutcore/') + 'frameworks/'
+        project_name = os.environ['DJANGO_SETTINGS_MODULE'].split('.')[-2]
+        directory = options.get('directory', 'sproutcore/') + \
+            'frameworks/' + project_name
         exclude = options.get('exclude', [])
 
         excluded_apps = [get_app(app_label) for app_label in exclude]
@@ -89,7 +90,7 @@ class Command(BaseCommand):
                 # If the subclassed file already exists, then we don't touch it.
                 if not os.path.exists(file_name):
                     f = open(file_name, 'w')
-                    rendered = render_to_string('sproutcore/user.html', {
+                    rendered = render_to_string('djangocore/user.html', {
                         'generated_file_name' : generated_file_name,
                         'app_label': app_label,
                         'module_name': module_name,
@@ -101,7 +102,7 @@ class Command(BaseCommand):
                 # Write the generated file to disk regardless of whether it
                 # already exists or not.
                 f = open(generated_file_name, 'w')
-                rendered = render_to_string('sproutcore/generated.html', {
+                rendered = render_to_string('djangocore/generated.html', {
                     'app_label': app_label,
                     'module_name': module_name,
                     'generated_fields': ModelTransform(model).render(),
