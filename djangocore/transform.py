@@ -98,18 +98,19 @@ class BaseFieldTransform(object):
             c.insert(0, smart_str(self.field.help_text))
         return c
     
+    def should_render(self):
+        return True
+    
     def render(self):
-        if self.field.primary_key:
-            return "primaryKey: 'pk'"
-            
-        field = Field(
-            name = self.get_name(),
-            record = self.get_record(),
-            js_type = self.get_js_type(),
-            attributes = self.get_attributes(),
-            comments = self.get_comments(),
-        )
-        return field.render()
+        if self.should_render():
+            field = Field(
+                name = self.get_name(),
+                record = self.get_record(),
+                js_type = self.get_js_type(),
+                attributes = self.get_attributes(),
+                comments = self.get_comments(),
+            )
+            return field.render()
     
     def __str__(self):
         return self.render()
@@ -216,7 +217,8 @@ class DecimalFieldTransform(BaseNumericTransform):
         return a
 
 class AutoFieldTransform(IntegerFieldTransform):
-    pass
+    def should_render(self):
+        return False
 
 # Temporal fields
 class BaseTemporalTransform(BaseFieldTransform):
@@ -321,8 +323,8 @@ class ModelTransform(object):
         # Regular fields and one-to-xxx relationships
         for field in ops.fields:
             try:
-                f = FIELD_TRANSFORMS[field.__class__](field, self.model)
-                fields.append(f.render())
+                f = FIELD_TRANSFORMS[field.__class__](field, self.model).render()
+                if f: fields.append(f)
             except KeyError:
                 # Got a custom field type, so we punt on it.
                 pass
@@ -331,14 +333,14 @@ class ModelTransform(object):
         m2m_fields = ops.many_to_many # forward m2m
         m2m_fields = [obj.field for obj in ops.get_all_related_many_to_many_objects()] # backward m2m
         for field in m2m_fields:
-            f = ToManyFieldTransform(field, self.model)
-            fields.append(f.render())
+            f = ToManyFieldTransform(field, self.model).render()
+            if f: fields.append(f)
 
         # Reverse one-to-xxx relationships
         reverse_fields = [obj.field for obj in ops.get_all_related_objects()] 
         for field in reverse_fields:
-            f = REVERSE_TRANSFORMS[field.__class__](field, self.model)
-            fields.append(f.render())
+            f = REVERSE_TRANSFORMS[field.__class__](field, self.model).render()
+            if f: fields.append(f)
          
         return ',\n\n'.join(fields)
     

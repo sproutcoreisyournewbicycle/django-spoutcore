@@ -5,7 +5,11 @@
 {{ app_label }}._{{ module_name }} = SC.Record.extend(
 /** {{ app_label }}._{{ module_name }}.prototype */ {
 
+primaryKey: 'pk',
+
 {{ generated_fields }}
 
 });
+
+{{ app_label }}._{{ module_name }}.djangoModel = '{{ app_label|lower }}.{{ module_name|lower }}';
 {% endautoescape %}
