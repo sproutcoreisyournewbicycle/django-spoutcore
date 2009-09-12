@@ -1,0 +1,11 @@
+{% autoescape off %}
+//WARNING: THIS FILE IS GENERATED AUTOMATICALLY AND MAY BE OVERWRITTEN.
+//IF YOU WISH TO MAKE CHANGES, SUBCLASS THE MODEL AND MAKE CHANGES THERE.
+
+{{ app_label }}._{{ module_name }} = SC.Record.extend(
+/** {{ app_label }}._{{ module_name }}.prototype */ {
+
+{{ generated_fields }}
+
+});
+{% endautoescape %}
