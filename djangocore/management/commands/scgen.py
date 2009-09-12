@@ -66,7 +66,10 @@ class Command(BaseCommand):
         if not os.path.exists(directory):
             os.makedirs(directory)
         os.chdir(directory)
+
+        cwd = os.getcwd()
         
+        app_labels = []    
         for app, model_list in app_list.items():
             if model_list is None:
                 model_list = get_models(app)
@@ -74,10 +77,12 @@ class Command(BaseCommand):
             # Only create a directory for the app if it has models.
             if model_list:
                 app_label = app.__name__.split('.')[-2]
-                path = '%s/_generated/' % app_label
+                app_labels.append(app_label)
+                
+                path = 'frameworks/%s/_generated/' % app_label
                 if not os.path.exists(path):
                     os.makedirs(path)
-                os.chdir(app_label)
+                os.chdir('frameworks/' + app_label)
 
             for model in model_list:
                 file_name = underscore(model._meta.module_name) + ".js"
@@ -90,7 +95,7 @@ class Command(BaseCommand):
                 # If the subclassed file already exists, then we don't touch it.
                 if not os.path.exists(file_name):
                     f = open(file_name, 'w')
-                    rendered = render_to_string('djangocore/user.html', {
+                    rendered = render_to_string('djangocore/user.js', {
                         'generated_file_name' : generated_file_name,
                         'app_label': app_label,
                         'module_name': module_name,
@@ -102,7 +107,7 @@ class Command(BaseCommand):
                 # Write the generated file to disk regardless of whether it
                 # already exists or not.
                 f = open(generated_file_name, 'w')
-                rendered = render_to_string('djangocore/generated.html', {
+                rendered = render_to_string('djangocore/generated.js', {
                     'app_label': app_label,
                     'module_name': module_name,
                     'generated_fields': ModelTransform(model).render(),
@@ -112,6 +117,13 @@ class Command(BaseCommand):
                 f.close()
             
             if model_list:                        
-                os.chdir('..')
+                os.chdir('../..')
 
-    
+        b = open('BuildFile', 'w')
+        rendered = render_to_string('djangocore/Buildfile/', {
+            'wrapper_framework': project_name,
+            'frameworks': ',\n'.join([r"'" + a + r"'" for a in app_labels]),
+        })
+        
+        b.write(rendered)
+        b.close()
