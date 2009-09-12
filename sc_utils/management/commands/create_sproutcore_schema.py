@@ -72,6 +72,7 @@ class Command(NoArgsCommand):
             os.chdir(settings.PROJECT_ROOT + "/sproutcore/frameworks/")
             try:
                 os.mkdir(app_name)
+		django_app = app_name
                 os.chdir(app_name)
                 os.mkdir('_generated')
             except OSError:
@@ -85,7 +86,7 @@ class Command(NoArgsCommand):
    #             import pdb; pdb.set_trace()
                 if not os.path.exists(file_name):
                     f = open(file_name, 'wb')
-                    t = loader.get_template('sc_utils/sproutcore_generated.html')
+                    t = loader.get_template('sc_utils/user.html')
                     c = Context({'model': inflector.classify(model.__name__), 'app': inflector.classify(app_name)})
                     rendered = t.render(c)
                     f.write(rendered)
@@ -94,11 +95,11 @@ class Command(NoArgsCommand):
                     #open and write the generated file as well
                     os.chdir(generated_folder_path)
                     f = open(generated_file_name, 'wb')
-                    t = loader.get_template('sc_utils/user.html')
+                    t = loader.get_template('sc_utils/sproutcore_generated.html')
                     c = Context({
                                 'model': inflector.classify(model.__name__),
                                 'app': inflector.classify(app_name),
-                                'folder': model.__name__
+                                'django_app': model.__name__
                             })
                     rendered = t.render(c)
                     f.write(rendered)
