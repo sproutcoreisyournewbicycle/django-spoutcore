@@ -8,7 +8,7 @@ from shutil import copy
 from django.db import models
 from django.template import loader, Context
 from django.conf import settings
-from utils.inflector.Inflector import Inflector
+from sc_utils.inflector import Inflector
 inflector = Inflector()
 try:
     set
