@@ -4,11 +4,12 @@ from django.core.management.color import no_style
 from django.utils.importlib import import_module
 from optparse import make_option
 import sys, os
+from shutil import copy
 from django.db import models
 from django.template import loader, Context
 from django.conf import settings
-from python import inflector
-
+from utils.inflector.Inflector import Inflector
+inflector = Inflector()
 try:
     set
 except NameError:
@@ -61,34 +62,50 @@ class Command(NoArgsCommand):
         created_models = set()
         pending_references = {}
         os.chdir(settings.PROJECT_ROOT)
-        try:
-#            import pdb; pdb.set_trace()
-            os.mkdir("sproutcore/")
-        except OSError:
-            pass
+        if not os.path.exists ("sproutcore/frameworks/"):
+            os.makedirs ("sproutcore/frameworks/")
         # Create the tables for each model
         for app in models.get_apps():
 
             app_name = app.__name__.split('.')[-2]
             model_list = models.get_models(app)
-            os.chdir(settings.PROJECT_ROOT + "/sproutcore/")
+            os.chdir(settings.PROJECT_ROOT + "/sproutcore/frameworks/")
             try:
                 os.mkdir(app_name)
                 os.chdir(app_name)
+                os.mkdir('_generated')
             except OSError:
                 os.chdir(app_name)
             for model in model_list:
                 # Create the model's file, if it doesn't already exist.
     #            import pdb; pdb.set_trace()
-                file_path = inflector.underscore(model.__name__) + ".js"
-                generate_file_path = inflector.underscore(model.__name__) + ".js"
-                if not os.path.exists(file_path):
-                    f = open(file_path, 'wb')
-                    t = loader.get_template('sc_utils/sproutcore.html')
-                    c = Context({})
+                file_name = inflector.underscore(model.__name__) + ".js"
+                generated_folder_path = settings.PROJECT_ROOT + "/sproutcore/frameworks/" + app_name + "/" "_generated/"
+                generated_file_name = "_" + file_name
+   #             import pdb; pdb.set_trace()
+                if not os.path.exists(file_name):
+                    f = open(file_name, 'wb')
+                    t = loader.get_template('sc_utils/sproutcore_generated.html')
+                    c = Context({'model': inflector.classify(model.__name__), 'app': inflector.classify(app_name)})
                     rendered = t.render(c)
                     f.write(rendered)
                     f.close()
+                    
+                    #open and write the generated file as well
+                    os.chdir(generated_folder_path)
+                    f = open(generated_file_name, 'wb')
+                    t = loader.get_template('sc_utils/user.html')
+                    c = Context({
+                                'model': inflector.classify(model.__name__),
+                                'app': inflector.classify(app_name),
+                                'folder': model.__name__
+                            })
+                    rendered = t.render(c)
+                    f.write(rendered)
+                    f.close()
+                    os.chdir('..')
+
+                    
                     if verbosity >= 2:
                         print "Processing %s.%s model" % (app_name, model._meta.object_name)
     #                seen_models.add(model)#TODO: Change to file list
