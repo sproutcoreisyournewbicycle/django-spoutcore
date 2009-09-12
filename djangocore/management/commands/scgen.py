@@ -84,12 +84,11 @@ class Command(BaseCommand):
                     os.makedirs(path)
                 os.chdir('frameworks/' + app_label)
 
+            app_label = camelize(app_label)
             for model in model_list:
                 file_name = underscore(model._meta.module_name) + ".js"
                 generated_file_name = '_generated/' + file_name
                 
-                # Convert the app_label and module_name to camel case.
-                app_label = camelize(model._meta.app_label)
                 module_name = camelize(model._meta.module_name)
 
                 # If the subclassed file already exists, then we don't touch it.
@@ -115,15 +114,22 @@ class Command(BaseCommand):
                 
                 f.write(rendered)
                 f.close()
-            
+                
             if model_list:                        
+                f = open('core.js', 'w')
+                rendered = render_to_string('djangocore/core.js', {
+                    'app_label': app_label,
+                })
+                
+                f.write(rendered)
+                f.close()
                 os.chdir('../..')
 
-        b = open('BuildFile', 'w')
-        rendered = render_to_string('djangocore/Buildfile/', {
+        f = open('BuildFile', 'w')
+        rendered = render_to_string('djangocore/Buildfile', {
             'wrapper_framework': project_name,
             'frameworks': ',\n'.join([r"'" + a + r"'" for a in app_labels]),
         })
         
-        b.write(rendered)
-        b.close()
+        f.write(rendered)
+        f.close()

@@ -3,6 +3,55 @@ import re
 from django.http import HttpResponseBadRequest
 from django.conf import settings
 
+from django.http import HttpResponse
+from django.utils import simplejson
+from django.core.mail import mail_admins
+from django.utils.translation import ugettext as _
+import sys
+
+# TO DO: Create working decorators for returning JSON and Serialized models.
+#def json_view(func):
+#    def wrap(request, *a, **kw):
+#        response = None
+#        try:
+#            response = func(request, *a, **kw)
+#            assert isinstance(response, dict)
+#            if 'result' not in response:
+#                response['result'] = 'ok'
+#        except Exception, e:
+#            # Come what may, we're returning JSON.
+#            if hasattr(e, 'message'):
+#                msg = e.message
+#            else:
+#                msg = _('Internal error')+': '+str(e)
+#            response = {'result': 'error',
+#                        'text': msg}
+#
+#        json = simplejson.dumps(response)
+#        return HttpResponse(json, mimetype='application/json')
+#    return wrap
+#    
+#def serialize_view(func):
+#    def wrap(request, *a, **kw):
+#        response = None
+#        try:
+#            qs = func(request, *a, **kw)
+#            assert isinstance(response, dict)
+#            if 'result' not in response:
+#                response['result'] = 'ok'
+#        except Exception, e:
+#            # Come what may, we're returning JSON.
+#            if hasattr(e, 'message'):
+#                msg = e.message
+#            else:
+#                msg = _('Internal error')+': '+str(e)
+#            response = {'result': 'error',
+#                        'text': msg}
+#
+#        json = simplejson.dumps(response)
+#        return HttpResponse(json, mimetype='application/json')
+#    return wrap
+
 def ajax_required(f):
     """
     AJAX request required decorator
@@ -20,6 +69,37 @@ def ajax_required(f):
     wrap.__doc__=f.__doc__
     wrap.__name__=f.__name__
     return wrap
+
+# decorators
+def POST_required(func):
+    def decorated(request, *args, **kwargs):
+        if request.method != 'POST':
+            return HttpResponseNotAllowed('Only POST here')
+        return func(request, *args, **kwargs)
+    return decorated
+
+def GET_required(func):
+    def decorated(request, *args, **kwargs):
+        if request.method != 'GET':
+            return HttpResponseNotAllowed('Only GET here')
+        return func(request, *args, **kwargs)
+    return decorated
+
+def PUT_required(func):
+    def decorated(request, *args, **kwargs):
+        if request.method != 'PUT':
+            return HttpResponseNotAllowed('Only PUT here')
+        return func(request, *args, **kwargs)
+    return decorated
+
+def DELETE_required(func):
+    def decorated(request, *args, **kwargs):
+        if request.method != 'DELETE':
+            return HttpResponseNotAllowed('Only DELETE here')
+        return func(request, *args, **kwargs)
+    return decorated
+
+
 
 def camelize(string):
     """
