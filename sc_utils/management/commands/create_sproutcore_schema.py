@@ -1,8 +1,13 @@
+import os.path
 from django.core.management.base import NoArgsCommand
 from django.core.management.color import no_style
 from django.utils.importlib import import_module
 from optparse import make_option
-import sys
+import sys, os
+from django.db import models
+from django.template import loader, Context
+from django.conf import settings
+from python import inflector
 
 try:
     set
@@ -19,8 +24,6 @@ class Command(NoArgsCommand):
             created, subclass files will not be overwritten."
 
     def handle_noargs(self, **options):
-        from django.db import connection, transaction, models
-        from django.conf import settings
         # from django.core.management.sql import custom_sql_for_model, emit_post_sync_signal
 
         verbosity = int(options.get('verbosity', 1))
@@ -57,19 +60,42 @@ class Command(NoArgsCommand):
 #TODO: check for files here
         created_models = set()
         pending_references = {}
-
+        os.chdir(settings.PROJECT_ROOT)
+        try:
+#            import pdb; pdb.set_trace()
+            os.mkdir("sproutcore/")
+        except OSError:
+            pass
         # Create the tables for each model
         for app in models.get_apps():
+
             app_name = app.__name__.split('.')[-2]
             model_list = models.get_models(app)
+            os.chdir(settings.PROJECT_ROOT + "/sproutcore/")
+            try:
+                os.mkdir(app_name)
+                os.chdir(app_name)
+            except OSError:
+                os.chdir(app_name)
             for model in model_list:
-                # Create the model's database table, if it doesn't already exist.
-                if verbosity >= 2:
-                    print "Processing %s.%s model" % (app_name, model._meta.object_name)
-#                seen_models.add(model)#TODO: Change to file list
-                created_models.add(model)
-                if verbosity >= 1:
-                    print "Creating file for %s" % model._meta.db_table
+                # Create the model's file, if it doesn't already exist.
+    #            import pdb; pdb.set_trace()
+                file_path = inflector.underscore(model.__name__) + ".js"
+                generate_file_path = inflector.underscore(model.__name__) + ".js"
+                if not os.path.exists(file_path):
+                    f = open(file_path, 'wb')
+                    t = loader.get_template('sc_utils/sproutcore.html')
+                    c = Context({})
+                    rendered = t.render(c)
+                    f.write(rendered)
+                    f.close()
+                    if verbosity >= 2:
+                        print "Processing %s.%s model" % (app_name, model._meta.object_name)
+    #                seen_models.add(model)#TODO: Change to file list
+                    created_models.add(model)
+                    if verbosity >= 1:
+                        print "Creating file for %s" % model._meta.db_table
+
 
         # Create the m2m tables. This must be done after all tables have been created
         # to ensure that all referred tables will exist.
