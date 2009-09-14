@@ -122,6 +122,10 @@ class BaseStringTransform(BaseFieldTransform):
         
 class TextFieldTransform(BaseStringTransform):
     pass
+
+#UUIDField can be picked up from django_extensions
+class UUIDFieldTransform(BaseStringTransform):
+    pass
     
 class CharFieldTransform(BaseStringTransform):
     def get_attributes(self):
@@ -300,6 +304,7 @@ FIELD_TRANSFORMS = {
     TextField: TextFieldTransform,
     TimeField: TimeFieldTransform,
     URLField: URLFieldTransform,
+    UUIDField: UUIDFieldTransform,
     XMLField: XMLFieldTransform,
 
     # Related fields
