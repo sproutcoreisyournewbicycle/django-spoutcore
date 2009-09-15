@@ -170,6 +170,7 @@ transformer.register('CharField', CharFieldTransformation)
 transformer.register('EmailField', CharFieldTransformation)
 transformer.register('SlugField', CharFieldTransformation)
 transformer.register('IPAddressField', CharFieldTransformation)
+transformer.register('UUIDField', CharFieldTransformation)
 
 class FileFieldTransformation(CharFieldTransformation):
     def get_attributes(self):
