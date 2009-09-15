@@ -11,7 +11,7 @@ from django.conf import settings
 
 # Intra-app dependencies.
 from djangocore.utils import camelize, underscore
-from djangocore.transform import ModelTransform
+from djangocore.transform import transformer
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -109,7 +109,7 @@ class Command(BaseCommand):
                 rendered = render_to_string('djangocore/generated.js', {
                     'app_label': app_label,
                     'module_name': module_name,
-                    'generated_fields': ModelTransform(model).render(),
+                    'generated_fields': transformer.render(model),
                 })
                 
                 f.write(rendered)
