@@ -114,7 +114,6 @@ class BaseFieldTransformation(object):
         
         # We only add these to the attributes if they are actually defined.
         uniques = dict(
-            defaultValue = self.field.default,
             isUniqueForDate = self.field.unique_for_date,
             isUniqueForMonth = self.field.unique_for_month,
             isUniqueForYear = self.field.unique_for_year,
@@ -122,9 +121,13 @@ class BaseFieldTransformation(object):
         
         # Cycle through and add the ones with values.
         for key, value in uniques.items():
-            if value != None and value != NOT_PROVIDED:
+            if value != None:
                 a[key] = value
-
+    
+        # Add the default value if it was set on the field.
+        if self.field.default != NOT_PROVIDED:
+            a['defaultValue'] = self.field.default
+        
         return a
         
     def get_comments(self):
