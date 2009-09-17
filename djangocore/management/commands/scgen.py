@@ -15,7 +15,7 @@ from djangocore.transform import transformer
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
-        make_option('-d', '--directory', default='sproutcore/', dest='directory',
+        make_option('-d', '--directory', default=getattr(settings, 'SPROUTCORE_ROOT', 'sproutcore/'), dest='directory',
             help='Specifies the output directory for the files.'),
         make_option('-e', '--exclude', dest='exclude', action='append', default=[],
             help='App to exclude (use multiple --exclude to exclude multiple apps).'),
@@ -79,43 +79,13 @@ class Command(BaseCommand):
                 app_label = app.__name__.split('.')[-2]
                 app_labels.append(app_label)
                 
+                # Create the directory structure for the app.
                 path = 'frameworks/%s/_generated/' % app_label
                 if not os.path.exists(path):
                     os.makedirs(path)
                 os.chdir('frameworks/' + app_label)
-
-            app_label = camelize(app_label)
-            for model in model_list:
-                file_name = underscore(model._meta.module_name) + ".js"
-                generated_file_name = '_generated/' + file_name
                 
-                module_name = camelize(model._meta.module_name)
-
-                # If the subclassed file already exists, then we don't touch it.
-                if not os.path.exists(file_name):
-                    f = open(file_name, 'w')
-                    rendered = render_to_string('djangocore/user.js', {
-                        'generated_file_name' : generated_file_name,
-                        'app_label': app_label,
-                        'module_name': module_name,
-                    })
-                    
-                    f.write(rendered)
-                    f.close()
-
-                # Write the generated file to disk regardless of whether it
-                # already exists or not.
-                f = open(generated_file_name, 'w')
-                rendered = render_to_string('djangocore/generated.js', {
-                    'app_label': app_label,
-                    'module_name': module_name,
-                    'generated_fields': transformer.render(model),
-                })
-                
-                f.write(rendered)
-                f.close()
-                
-            if model_list:                        
+                # Create the core.js file.
                 f = open('core.js', 'w')
                 rendered = render_to_string('djangocore/core.js', {
                     'app_label': app_label,
@@ -123,6 +93,41 @@ class Command(BaseCommand):
                 
                 f.write(rendered)
                 f.close()
+
+                # Create the generated and user files for each model.
+                app_label = camelize(app_label)
+                for model in model_list:
+                    file_name = underscore(model._meta.module_name) + ".js"
+                    generated_file_name = '_generated/' + file_name
+                    
+                    model_name = camelize(model._meta.verbose_name)
+    
+                    # If the subclassed file already exists, then we don't touch it.
+                    if not os.path.exists(file_name):
+                        f = open(file_name, 'w')
+                        rendered = render_to_string('djangocore/user.js', {
+                            'generated_file_name' : generated_file_name,
+                            'app_label': app_label,
+                            'model_name': model_name,
+                        })
+                        
+                        f.write(rendered)
+                        f.close()
+    
+                    # Write the generated file to disk regardless of whether it
+                    # already exists or not.
+                    f = open(generated_file_name, 'w')
+                    data = transformer.get_model_data(model)
+                    data.update({
+                        'app_label': app_label,
+                        'model_name': model_name,
+                    })
+                    rendered = render_to_string('djangocore/generated.js', data)
+                    
+                    f.write(rendered)
+                    f.close()
+                
+                # Move back out to the main directory. 
                 os.chdir('../..')
 
         f = open('BuildFile', 'w')
