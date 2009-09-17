@@ -1,105 +1,91 @@
 import re
-
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponseNotAllowed
 from django.conf import settings
 
-from django.http import HttpResponse
-from django.utils import simplejson
-from django.core.mail import mail_admins
-from django.utils.translation import ugettext as _
-import sys
-
-# TO DO: Create working decorators for returning JSON and Serialized models.
-#def json_view(func):
-#    def wrap(request, *a, **kw):
-#        response = None
-#        try:
-#            response = func(request, *a, **kw)
-#            assert isinstance(response, dict)
-#            if 'result' not in response:
-#                response['result'] = 'ok'
-#        except Exception, e:
-#            # Come what may, we're returning JSON.
-#            if hasattr(e, 'message'):
-#                msg = e.message
-#            else:
-#                msg = _('Internal error')+': '+str(e)
-#            response = {'result': 'error',
-#                        'text': msg}
-#
-#        json = simplejson.dumps(response)
-#        return HttpResponse(json, mimetype='application/json')
-#    return wrap
-#    
-#def serialize_view(func):
-#    def wrap(request, *a, **kw):
-#        response = None
-#        try:
-#            qs = func(request, *a, **kw)
-#            assert isinstance(response, dict)
-#            if 'result' not in response:
-#                response['result'] = 'ok'
-#        except Exception, e:
-#            # Come what may, we're returning JSON.
-#            if hasattr(e, 'message'):
-#                msg = e.message
-#            else:
-#                msg = _('Internal error')+': '+str(e)
-#            response = {'result': 'error',
-#                        'text': msg}
-#
-#        json = simplejson.dumps(response)
-#        return HttpResponse(json, mimetype='application/json')
-#    return wrap
-
-def ajax_required(f):
+def ajax_required(func):
     """
-    AJAX request required decorator
-    use it in your views:
+    Simple decorator to require an AJAX request for a view.
 
     @ajax_required
     def my_view(request):
-        ....
+        ...
 
     """    
     def wrap(request, *args, **kwargs):
-            if not request.is_ajax() and not settings.DEBUG:
-                return HttpResponseBadRequest
-            return f(request, *args, **kwargs)
-    wrap.__doc__=f.__doc__
-    wrap.__name__=f.__name__
+        if not request.is_ajax() and not settings.DEBUG:
+            return HttpResponseBadRequest
+        return func(request, *args, **kwargs)
+    wrap.__doc__ = func.__doc__
+    wrap.__name__ = func.__name__
     return wrap
 
-# decorators
-def POST_required(func):
-    def decorated(request, *args, **kwargs):
-        if request.method != 'POST':
-            return HttpResponseNotAllowed('Only POST here')
-        return func(request, *args, **kwargs)
-    return decorated
+def get_required(func):
+    """
+    Simple decorator to require an GET request for a view.
 
-def GET_required(func):
-    def decorated(request, *args, **kwargs):
+    @get_required
+    def my_view(request):
+        ...
+
+    """    
+    def wrap(request, *args, **kwargs):
         if request.method != 'GET':
-            return HttpResponseNotAllowed('Only GET here')
+            return HttpResponseNotAllowed(['GET'])
         return func(request, *args, **kwargs)
-    return decorated
+    wrap.__doc__ = func.__doc__
+    wrap.__name__ = func.__name__
+    return wrap
 
-def PUT_required(func):
-    def decorated(request, *args, **kwargs):
+def post_required(func):
+    """
+    Simple decorator to require an POST request for a view.
+
+    @post_required
+    def my_view(request):
+        ...
+
+    """    
+    def wrap(request, *args, **kwargs):
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+        return func(request, *args, **kwargs)
+    wrap.__doc__ = func.__doc__
+    wrap.__name__ = func.__name__
+    return wrap
+
+def put_required(func):
+    """
+    Simple decorator to require an PUT request for a view.
+
+    @put_required
+    def my_view(request):
+        ...
+
+    """    
+    def wrap(request, *args, **kwargs):
         if request.method != 'PUT':
-            return HttpResponseNotAllowed('Only PUT here')
+            return HttpResponseNotAllowed(['PUT'])
         return func(request, *args, **kwargs)
-    return decorated
+    wrap.__doc__ = func.__doc__
+    wrap.__name__ = func.__name__
+    return wrap
 
-def DELETE_required(func):
-    def decorated(request, *args, **kwargs):
+def delete_required(func):
+    """
+    Simple decorator to require an DELETE request for a view.
+
+    @delete_required
+    def my_view(request):
+        ...
+
+    """    
+    def wrap(request, *args, **kwargs):
         if request.method != 'DELETE':
-            return HttpResponseNotAllowed('Only DELETE here')
+            return HttpResponseNotAllowed(['DELETE'])
         return func(request, *args, **kwargs)
-    return decorated
-
-
+    wrap.__doc__ = func.__doc__
+    wrap.__name__ = func.__name__
+    return wrap
 
 def camelize(string):
     """
