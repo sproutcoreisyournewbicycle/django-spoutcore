@@ -78,6 +78,7 @@ class Command(BaseCommand):
             if model_list:
                 app_label = app.__name__.split('.')[-2]
                 app_labels.append(app_label)
+                app_label = camelize(app_label)
                 
                 # Create the directory structure for the app.
                 path = 'frameworks/%s/_generated/' % app_label
@@ -95,7 +96,6 @@ class Command(BaseCommand):
                 f.close()
 
                 # Create the generated and user files for each model.
-                app_label = camelize(app_label)
                 for model in model_list:
                     file_name = underscore(model._meta.module_name) + ".js"
                     generated_file_name = '_generated/' + file_name
