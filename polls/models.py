@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -6,7 +8,7 @@ class Poll(models.Model):
     question = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     author = models.ForeignKey(User)
-    pub_date = models.DateTimeField()
+    pub_date = models.DateTimeField(default=datetime.now)
     
     def __unicode__(self):
         return self.question
