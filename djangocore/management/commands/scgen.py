@@ -78,7 +78,6 @@ class Command(BaseCommand):
             if model_list:
                 app_label = app.__name__.split('.')[-2]
                 app_labels.append(app_label)
-                app_label = camelize(app_label)
                 
                 # Create the directory structure for the app.
                 path = 'frameworks/%s/_generated/' % app_label
@@ -86,6 +85,7 @@ class Command(BaseCommand):
                     os.makedirs(path)
                 os.chdir('frameworks/' + app_label)
                 
+                app_label = camelize(app_label)
                 # Create the core.js file.
                 f = open('core.js', 'w')
                 rendered = render_to_string('djangocore/core.js', {
