@@ -150,11 +150,17 @@ class ModelTransformer(object):
       transformation=BaseTransformation):
         self._transformations[field_name] = \
           (transformation, acceptable_type, extra_attributes)
-          
+    
     def register_reverse(self, field_name, acceptable_type='', \
       extra_attributes=[], transformation=BaseTransformation):
         self._reverse_transformations[field_name] = \
           (transformation, acceptable_type, extra_attributes)
+
+    def unregister(self, field_name):
+        del self._transformations[field_name]
+          
+    def unregister_reverse(self, field_name):
+        del self._reverse_transformations[field_name]
 
     def get_fields(self, model):
         fields = []
