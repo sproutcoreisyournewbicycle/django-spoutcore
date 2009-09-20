@@ -10,7 +10,7 @@
 */
 {{ field.name }}: {{ field.record }}({{ field.js_type }}, {{ field.attributes }}),
 {% endfor %}
-primaryKey: 'pk'
+primaryKey: '{{ pk_field }}'
 
 });
 
