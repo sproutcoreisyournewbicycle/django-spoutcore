@@ -15,7 +15,7 @@ from djangocore.transform import transformer
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
-        make_option('-d', '--directory', default=getattr(settings, 'SPROUTCORE_ROOT', 'sproutcore/'), dest='directory',
+        make_option('-d', '--directory', default=''), dest='directory',
             help='Specifies the output directory for the files.'),
         make_option('-e', '--exclude', dest='exclude', action='append', default=[],
             help='App to exclude (use multiple --exclude to exclude multiple apps).'),
@@ -26,10 +26,21 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
         project_name = os.environ['DJANGO_SETTINGS_MODULE'].split('.')[-2]
-        directory = options.get('directory', 'sproutcore/') + \
-            'frameworks/' + project_name
+        directory = options.get('directory', None)
+        
+        # This part of the code used to be one line, until we decided to check
+        # that SPROUTCORE_ROOT starts with a '/'. Now we have to do hula hoops!
+        if not directory:
+            root = getattr(settings, 'SPROUTCORE_ROOT', '')
+            if root:
+                if not root.startswith('/'):
+                    raise ValueError, "SPROUTCORE_ROOT must be an absolute " \
+                      "path (and start with a '/')"
+                directory = root + 'frameworks/' + project_name
+            else:
+                directory = 'sproutcore/frameworks' + project_name
+        
         exclude = options.get('exclude', [])
-
         excluded_apps = [get_app(app_label) for app_label in exclude]
 
         if len(app_labels) == 0:
