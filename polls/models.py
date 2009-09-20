@@ -16,4 +16,7 @@ class Poll(models.Model):
 class Choice(models.Model):
     poll = models.ForeignKey(Poll)
     answer = models.CharField(max_length=255)
-    votes = models.IntegerField(default=0)    
+    votes = models.IntegerField(default=0)
+    
+    def __unicode__(self):
+        return self.answer
