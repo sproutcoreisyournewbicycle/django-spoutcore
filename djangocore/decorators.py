@@ -178,7 +178,7 @@ def get_emitter_format(func, emitter_format=''):
     """        
     def decorator(func):
         def wrap(*args, **kwargs):
-            kwargs['emitter_format'] = format or request.GET.get('format', 'json')
+            kwargs['emitter_format'] = emitter_format or request.GET.get('format', 'json')
             return func(*args, **kwargs)
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
