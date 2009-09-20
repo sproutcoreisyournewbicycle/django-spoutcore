@@ -4,14 +4,14 @@ from django.db.models.fields import FieldDoesNotExist
 from django.forms import model_to_dict
 from django.forms.models import modelform_factory
 from django.conf import settings
-from django.utils.simplejson import dumps
 
-from piston.resource import Resource
 from piston.handler import BaseHandler
  
 from djangocore.utils import EmitterHttpResponse
 from djangocore.decorators import staff_member_required, permission_required, \
   get_model_from_kwargs, get_emitter_format
+
+__all__ = ['LengthHandler', 'RangeHandler', 'BulkHandler', 'ObjectHandler']
 
 class LengthHandler(BaseHandler):
     allowed_methods = ('GET',)
@@ -21,7 +21,6 @@ class LengthHandler(BaseHandler):
     @get_model_from_kwargs
     def read(self, request, model):
         return model._default_manager.count()
-length_resource = Resource(LengthHandler)
 
 class RangeHandler(BaseHandler):
     """
@@ -69,7 +68,6 @@ class RangeHandler(BaseHandler):
             return resp
 
         return model._default_manager.values().order_by(*ordering)[start:end]
-range_resource = Resource(RangeHandler)
 
 class BulkHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
@@ -95,8 +93,8 @@ class BulkHandler(BaseHandler):
             ret = {'message': "Requests may not specify more than %d records " \
               "to return (asked for %d)." % (max_objects_per_request, \
               len(pk_list))}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              mimetype='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         
         return model._default_manager.values().filter(pk__in=pk_list)
@@ -258,4 +256,3 @@ class ObjectHandler(BaseHandler):
         # Delete successful, return an emtpy body, as per RFC2616
         return EmitterHttpResponse(request, self, '', status=204, \
           format=emitter_format)
-object_resource = Resource(ObjectHandler)
