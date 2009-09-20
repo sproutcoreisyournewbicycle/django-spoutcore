@@ -2,7 +2,7 @@ from django.conf.urls.defaults import *
 from django.conf import settings
 
 from piston.resource import Resource
-from djangocore.handlers *
+from djangocore.handlers import *
 
 urlpatterns = patterns('',
     url(r'^(?P<app_label>[^/]+)/(?P<module_name>[^/]+)/length/$',   Resource(LengthHandler)),
