@@ -121,14 +121,15 @@ def get_model_from_kwargs(func=None, app_label_kwarg='app_label', \
             app_label = kwargs.pop(app_label_kwarg)        
             module_name = kwargs.pop(module_name_kwarg)
     
-            kwargs['model'] = get_model(app_label, module_name)
-            if not model:
-                return HttpResponseBadRequest("No model with the specified " \
-                  "app label and module name exists.", \
-                  mimetype='text/plain: charset=utf-8')
+            model = get_model(app_label, module_name)
+            if model:
+                kwargs['model'] = model
+                return func(*args, **kwargs)
+
+            return HttpResponseBadRequest("No model with the specified app " \
+              "label and module name exists.", \
+              mimetype='text/plain: charset=utf-8')
     
-            return func(*args, **kwargs)
-        
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
         wrap.__dict__.update(func.__dict__)
