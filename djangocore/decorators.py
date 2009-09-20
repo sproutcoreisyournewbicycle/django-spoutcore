@@ -1,5 +1,7 @@
 from django.db.models import get_model
-from django.http import HttpResponseForbidden, HttpResponseBadRequest
+from django.http import HttpResponseForbidden, HttpResponseBadRequest, \
+  HttpResponseNotAllowed
+from django.conf import settings
 
 def staff_member_required(func):
     """
