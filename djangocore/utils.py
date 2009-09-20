@@ -21,8 +21,8 @@ try:
         def __init__(self, request, handler, content='', mimetype=None, \
           status=None, content_type=None, format='json'):
     
+            emitter, mimetype = Emitter.get(format)
             if content:
-                emitter, mimetype = Emitter.get(format)
                 srl = emitter(content, typemapper, handler, handler.fields, \
                   handler.is_anonymous)
                 content = srl.render(request)                
