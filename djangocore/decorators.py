@@ -19,7 +19,7 @@ def staff_member_required(func):
     """
     def wrap(request, *args, **kwargs):
         # User must be logged in, active, and staff.
-        if not request.user.is_authenticated or \
+        if not request.user.is_authenticated() or \
           not request.user.is_staff:
             return HttpResponseForbidden
         
