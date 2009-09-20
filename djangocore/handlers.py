@@ -152,8 +152,9 @@ class BulkHandler(BaseHandler):
             return resp
         model._default_manager.filter(pk__in=pk_list).delete()
 
-        return HttpResponse('', \ # emtpy body, as per RFC2616
-          mimetype='text/plain; charset=utf-8', status=204)
+        # Successful delete requests, return an emtpy body, as per RFC2616
+        return HttpResponse('', mimetype='text/plain; charset=utf-8', \
+          status=204)
 
 class ObjectHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -253,5 +254,6 @@ class ObjectHandler(BaseHandler):
             return resp
         model._default_manager.get(pk__in=pk).delete()
 
-        return HttpResponse('', \ # emtpy body, as per RFC2616
-          mimetype='text/plain; charset=utf-8', status=204)
+        # Successful delete requests, return an emtpy body, as per RFC2616
+        return HttpResponse('', mimetype='text/plain; charset=utf-8', \
+          status=204)
