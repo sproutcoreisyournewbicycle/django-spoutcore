@@ -50,6 +50,7 @@ def permission_required(perm, *permissions):
     """
     # We use multiple permission arguments, so that the decorator will throw an
     # error if it's not passed at least one. We Merge them back together here.
+    permissions = list(permissions) # convert from tuple
     permissions.append(perm)
     
     def decorator(func):
