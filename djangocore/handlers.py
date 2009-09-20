@@ -3,15 +3,15 @@ from django.db.models.fields import FieldDoesNotExist
 
 from django.forms import model_to_dict
 from django.forms.models import modelform_factory
-from django.http import HttpResponseBadRequest, HttpResponse
 from django.conf import settings
 from django.utils.simplejson import dumps
 
 from piston.resource import Resource
 from piston.handler import BaseHandler
  
+from djangocore.utils import EmitterHttpResponse
 from djangocore.decorators import staff_member_required, permission_required, \
-  get_model_from_kwargs
+  get_model_from_kwargs, get_emitter_format
 
 class LengthHandler(BaseHandler):
     allowed_methods = ('GET',)
@@ -50,7 +50,8 @@ class RangeHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def read(self, request, model):
+    @get_emitter_format
+    def read(self, request, model, emitter_format):
         max_objects_per_request = getattr(settings, \
           'SPROUTCORE_MAX_OBJECTS_PER_REQUEST', 300)
 
@@ -63,8 +64,8 @@ class RangeHandler(BaseHandler):
             ret = {'message': "Requests may not specify more than %d records " \
               "to return (asked for %d)." % (max_objects_per_request, \
               end - start)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         return model._default_manager.values().order_by(*ordering)[start:end]
@@ -76,13 +77,14 @@ class BulkHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def read(self, request, model):
+    @get_emitter_format
+    def read(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
         if len(pk_list) is 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         max_objects_per_request = getattr(settings, \
@@ -94,7 +96,7 @@ class BulkHandler(BaseHandler):
               "to return (asked for %d)." % (max_objects_per_request, \
               len(pk_list))}
             resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+              mimetype='application/json; charset=utf-8')
             return resp
         
         return model._default_manager.values().filter(pk__in=pk_list)
@@ -102,13 +104,14 @@ class BulkHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def update(self, request, model):
+    @get_emitter_format
+    def update(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
         if len(pk_list) is 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         # Make sure the PUT data doesn't contain the primary key for a model. If
@@ -124,14 +127,14 @@ class BulkHandler(BaseHandler):
         except FieldDoesNotExist, error:
             ret = {'message': "Request specified a non-existent field to " \
               "update: %s" % error}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         except (ValueError, TypeError, IntegrityError), error:
             ret = {'message': "Request specified inappropriate data for a " \
               "field: %s" % msg}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         
         return objects.values()
@@ -139,22 +142,20 @@ class BulkHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.delete_%(module_name)s')
     @get_model_from_kwargs
-    def delete(self, request, model):
-        # Call getlist on GET to make sure that the client didn't try to send
-        # more than one pk in the request. If they did, then we can return an
-        # Http 400 Bad Request, since this method only deletes a single object.
-        # If we only called get() on GET, then we'd only be deleting the last
-        # pk sent in the query string, completely ignoring any others.
+    @get_emitter_format
+    def delete(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
         if len(pk_list) is 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         model._default_manager.filter(pk__in=pk_list).delete()
-        return HttpResponse('', \ # emtpy body, as per RFC2616
-          content_type='application/json; charset=utf-8', status=204)
+
+        # Delete successful, return an emtpy body, as per RFC2616
+        return EmitterHttpResponse(request, self, '', status=204, \
+          format=emitter_format)
 
 class ObjectHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -162,27 +163,29 @@ class ObjectHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def read(self, request, model):
+    @get_emitter_format
+    def read(self, request, model, emitter_format):
         pk = request.GET.getlist('pk')
         if len(pk) is not 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         return model._default_manager.values().get(pk__in=pk)
     
     @staff_member_required
     @permission_required('%(app_label)s.add_%(module_name)s')
     @get_model_from_kwargs
-    def create(self, request, model):
+    @get_emitter_format
+    def create(self, request, model, emitter_format):
         ModelForm = modelform_factory(model)
         form = ModelForm(request.POST)
         if form.errors:
             ret = {'message': "The submitted data contained %s errors." % \
               len(form.errors), 'errors': form.errors}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         obj = form.save()
@@ -191,7 +194,8 @@ class ObjectHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def update(self, request, model):
+    @get_emitter_format
+    def update(self, request, model, emitter_format):
         """
         PUT will attempt to update as many existing objects as it can find
         in the database. If an object with the specified pk doesn't exist,
@@ -207,8 +211,8 @@ class ObjectHandler(BaseHandler):
         if len(pk) is not 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         try:
@@ -216,8 +220,8 @@ class ObjectHandler(BaseHandler):
         except model.DoesNotExist, msg:
             ret = {'message': "No object with the given pk exists (asked for " \
               "pk %s)." % pk[0]}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         ModelForm = modelform_factory(model)
@@ -225,8 +229,8 @@ class ObjectHandler(BaseHandler):
         if form.errors:
             ret = {'message': "The submitted data contained %s errors." % \
               len(form.errors), 'errors': form.errors}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
 
         obj = form.save()
@@ -235,7 +239,8 @@ class ObjectHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.delete_%(module_name)s')
     @get_model_from_kwargs
-    def delete(self, request, model):
+    @get_emitter_format
+    def delete(self, request, model, emitter_format):
         # Call getlist on GET to make sure that the client didn't try to send
         # more than one pk in the request. If they did, then we can return an
         # Http 400 Bad Request, since this method only deletes a single object.
@@ -245,10 +250,12 @@ class ObjectHandler(BaseHandler):
         if len(pk) is not 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
-            resp = HttpResponseBadRequest(dumps(ret), \
-              content_type='application/json; charset=utf-8')
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=400, format=emitter_format)
             return resp
         model._default_manager.get(pk__in=pk).delete()
-        return HttpResponse('', \ # emtpy body, as per RFC2616
-          content_type='application/json; charset=utf-8', status=204)
+
+        # Delete successful, return an emtpy body, as per RFC2616
+        return EmitterHttpResponse(request, self, '', status=204, \
+          format=emitter_format)
 object_resource = Resource(ObjectHandler)
