@@ -1,9 +1,38 @@
 import re
-from django.http import HttpResponseBadRequest, HttpResponseNotAllowed
-from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
+from django.http import HttpResponse
+from django.conf import settings
 from django.utils.functional import Promise
 from django.utils.encoding import smart_str
+
+
+try:
+    from piston.emitters import Emitter
+    from piston.handler import typemapper
+
+    class EmitterHttpResponse(HttpResponse):
+        """
+        An HttpResponse object that emits its content acording to the
+        given format. Defaults to emitting `json`. Useful for when you
+        want to return a response with encoded contents, that doesn't
+        have a HTTP 200 status code.
+        
+        """
+        def __init__(self, request, handler, content='', mimetype=None, \
+          status=None, content_type=None, format='json'):
+    
+            if content:
+                emitter, mimetype = Emitter.get(format)
+                srl = emitter(content, typemapper, handler, handler.fields, \
+                  handler.is_anonymous)
+                content = srl.render(request)                
+    
+            super(EmitterHttpResponse, self).__init__(content, mimetype, \
+              status, content_type)
+
+except ImportError:
+    pass
+    
 
 class SproutCoreJSONEncoder(DjangoJSONEncoder):
     """
