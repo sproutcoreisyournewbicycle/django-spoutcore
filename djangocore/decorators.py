@@ -178,12 +178,6 @@ def get_emitter_format(func, emitter_format=''):
     """        
     def decorator(func):
         def wrap(*args, **kwargs):
-            request = None
-            for arg in args:
-                if isinstance(arg, HttpRequest):
-                    request = arg
-                    break
-            
             em = None
             for arg in args:
                 if isinstance(arg, HttpRequest):
