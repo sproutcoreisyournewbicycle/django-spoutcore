@@ -4,6 +4,7 @@ from django.db.models.fields import FieldDoesNotExist
 from django.forms import model_to_dict
 from django.forms.models import modelform_factory
 from django.conf import settings
+from django.http import HttpResponse
 
 from piston.handler import BaseHandler
  
@@ -78,7 +79,7 @@ class BulkHandler(BaseHandler):
     @get_emitter_format
     def read(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
-        if len(pk_list) is 0:
+        if len(pk_list) == 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -105,7 +106,7 @@ class BulkHandler(BaseHandler):
     @get_emitter_format
     def update(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
-        if len(pk_list) is 0:
+        if len(pk_list) == 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -143,7 +144,7 @@ class BulkHandler(BaseHandler):
     @get_emitter_format
     def delete(self, request, model, emitter_format):
         pk_list = request.GET.getlist('pk')
-        if len(pk_list) is 0:
+        if len(pk_list) == 0:
             ret = {'message': "Requests must specify at least one pk argument" \
               " in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -151,9 +152,8 @@ class BulkHandler(BaseHandler):
             return resp
         model._default_manager.filter(pk__in=pk_list).delete()
 
-        # Delete successful, return an emtpy body, as per RFC2616
-        return EmitterHttpResponse(request, self, '', status=204, \
-          format=emitter_format)
+        return HttpResponse('', \ # emtpy body, as per RFC2616
+          mimetype='text/plain; charset=utf-8', status=204)
 
 class ObjectHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -164,7 +164,7 @@ class ObjectHandler(BaseHandler):
     @get_emitter_format
     def read(self, request, model, emitter_format):
         pk = request.GET.getlist('pk')
-        if len(pk) is not 1:
+        if len(pk) != 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -206,7 +206,7 @@ class ObjectHandler(BaseHandler):
         means it is very simple to do bulk update operations.
         """
         pk = request.GET.getlist('pk')
-        if len(pk) is not 1:
+        if len(pk) != 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -245,7 +245,7 @@ class ObjectHandler(BaseHandler):
         # If we only called get() on GET, then we'd only be deleting the last
         # pk sent in the query string, completely ignoring any others.
         pk = request.GET.getlist('pk')
-        if len(pk) is not 1:
+        if len(pk) != 1:
             ret = {'message': "Requests must specify exactly one pk argument " \
               "in the query paramters (%d given)." % len(pk)}
             resp = EmitterHttpResponse(request, self, ret, \
@@ -253,6 +253,5 @@ class ObjectHandler(BaseHandler):
             return resp
         model._default_manager.get(pk__in=pk).delete()
 
-        # Delete successful, return an emtpy body, as per RFC2616
-        return EmitterHttpResponse(request, self, '', status=204, \
-          format=emitter_format)
+        return HttpResponse('', \ # emtpy body, as per RFC2616
+          mimetype='text/plain; charset=utf-8', status=204)
