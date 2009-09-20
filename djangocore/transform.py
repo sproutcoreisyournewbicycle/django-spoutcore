@@ -84,7 +84,7 @@ class BaseTransformation(object):
             
             # If the attribute is a 2-value tuple, then we upack the key.
             elif (isinstance(attr, list) or isinstance(attr, tuple)) and \
-              len(attr) is 2:
+              len(attr) == 2:
                 key, value = attr
 
             # If the attribute is not in a form we recognize, we skip it.
