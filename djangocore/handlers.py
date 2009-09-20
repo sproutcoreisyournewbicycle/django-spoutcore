@@ -3,13 +3,12 @@ from django.db.models.fields import FieldDoesNotExist
 
 from django.forms import model_to_dict
 from django.forms.models import modelform_factory
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse
 from django.conf import settings
 from django.utils.simplejson import dumps
 
 from piston.resource import Resource
 from piston.handler import BaseHandler
-from piston.utils import rc
  
 from djangocore.decorators import staff_member_required, permission_required, \
   get_model_from_kwargs
@@ -154,7 +153,8 @@ class BulkHandler(BaseHandler):
               content_type='application/json; charset=utf-8')
             return resp
         model._default_manager.filter(pk__in=pk_list).delete()
-        return rc.DELETED
+        return HttpResponse('', \ # emtpy body, as per RFC2616
+          content_type='application/json; charset=utf-8', status=204)
 
 class ObjectHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -249,5 +249,6 @@ class ObjectHandler(BaseHandler):
               content_type='application/json; charset=utf-8')
             return resp
         model._default_manager.get(pk__in=pk).delete()
-        return rc.DELETED
+        return HttpResponse('', \ # emtpy body, as per RFC2616
+          content_type='application/json; charset=utf-8', status=204)
 object_resource = Resource(ObjectHandler)
