@@ -123,6 +123,56 @@ def get_model_from_kwargs(func=None, app_label_kwarg='app_label', \
         # @get_model_from_kwargs(func)
         return decorator(func)
 
+def get_emitter_format(func, emitter_format=''):
+    """
+    Takes one keyword arguments::
+        
+        emitter_format: the emitter format for this handler. If not
+        given, tries to look for a `format` GET parameter, and failing
+        that, defaults to `json`.
+        
+    Unfortunately piston doesn't pass through the emitter_format keyword
+    argument, which means this decorator can only detect the format if
+    it is specified as a GET parameter.
+    
+    If you're explicitly specifying a particular output format (by
+    passing a dictionary with an `emitter_format` key in it to the
+    handler) this decorator can still help. Simply call the decorator,
+    with the `format` keyword argument set to the same string used in
+    the passed dictionary.
+
+    If the emitter format is dynamically specified in the URL path
+    itself, then there's no way for the decorator to retrieve it. The
+    solution? Don't specify the emitter format as part of the URL path;
+    only use GET parameters, or specify explicitly.
+    
+    @get_emitter_format
+    def my_view(request, model):
+        ...
+
+    @get_emitter_format(format='json')
+    def my_view(request, model):
+        ...
+    
+    """        
+    def decorator(func):
+        def wrap(request, *args, **kwargs):
+            kwargs['emitter_format'] = format or request.GET.get('format', 'json')
+            return func(request, *args, **kwargs)
+        wrap.__doc__ = func.__doc__
+        wrap.__name__ = func.__name__
+        return wrap
+
+    if func is None:
+        # @get_emitter_format() or
+        # @get_emitter_format(format='json')
+        return decorator
+    else:
+        # @get_emitter_format or
+        # @get_emitter_format(func)
+        return decorator(func)
+
+
 def ajax_required(func):
     """
     Simple decorator to require an AJAX request for a view.
