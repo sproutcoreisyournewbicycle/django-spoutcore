@@ -1,6 +1,6 @@
 from django.db.models import get_model
 from django.http import HttpResponseForbidden, HttpResponseBadRequest, \
-  HttpResponseNotAllowed
+  HttpResponseNotAllowed, HttpRequest
 from django.conf import settings
 
 def staff_member_required(func):
@@ -17,14 +17,20 @@ def staff_member_required(func):
         ...
         
     """
-    def wrap(request, *args, **kwargs):
+    def wrap(*args, **kwargs):
         # User must be logged in, active, and staff.
-        if not request.user.is_authenticated() or \
-          not request.user.is_staff:
-            return HttpResponseForbidden
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and request.user.is_authenticated() and \
+          request.user.is_staff:
+            return func(*args, **kwargs)
         
-        return func(request, *args, **kwargs)
-    
+        return HttpResponseForbidden
+        
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
@@ -55,15 +61,22 @@ def permission_required(perm, *permissions):
     permissions.append(perm)
     
     def decorator(func):
-        def wrap(request, *args, **kwargs):
-            # Format the passed permissions with any kwargs and make sure
-            # that the user does have all indiciated permissions.
-            required_permissions = [p % kwargs for p in permissions]
-            if not request.user.has_perms(required_permissions):
-                return HttpResponseForbidden
+        def wrap(*args, **kwargs):
+            request = None
+            for arg in args:
+                if isinstance(arg, HttpRequest):
+                    request = arg
+                    break
             
-            return func(request, *args, **kwargs)
-        
+            if request:
+                # Format the passed permissions with any kwargs and make sure
+                # that the user does have all indiciated permissions.
+                required_permissions = [p % kwargs for p in permissions]
+                if not request.user.has_perms(required_permissions):
+                    return func(*args, **kwargs)
+            
+            return HttpResponseForbidden
+            
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
         wrap.__dict__.update(func.__dict__)
@@ -101,15 +114,15 @@ def get_model_from_kwargs(func=None, app_label_kwarg='app_label', \
     
     """        
     def decorator(func):
-        def wrap(request, *args, **kwargs):
+        def wrap(*args, **kwargs):
             app_label = kwargs.pop(app_label_kwarg)        
             module_name = kwargs.pop(module_name_kwarg)
     
-            model = get_model(app_label, module_name)
+            kwargs['model'] = get_model(app_label, module_name)
             if not model:
                 return HttpResponseBadRequest
     
-            return func(request, model, *args, **kwargs)
+            return func(*args, **kwargs)
         
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
@@ -158,9 +171,9 @@ def get_emitter_format(func, emitter_format=''):
     
     """        
     def decorator(func):
-        def wrap(request, *args, **kwargs):
+        def wrap(*args, **kwargs):
             kwargs['emitter_format'] = format or request.GET.get('format', 'json')
-            return func(request, *args, **kwargs)
+            return func(*args, **kwargs)
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
         wrap.__dict__.update(func.__dict__)
@@ -176,6 +189,7 @@ def get_emitter_format(func, emitter_format=''):
         return decorator(func)
 
 
+# NOTE: The following decorators currently do not work with class methods.
 def ajax_required(func):
     """
     Simple decorator to require an AJAX request for a view.
@@ -185,10 +199,17 @@ def ajax_required(func):
         ...
 
     """    
-    def wrap(request, *args, **kwargs):
-        if not request.is_ajax() and not settings.DEBUG:
-            return HttpResponseBadRequest
-        return func(request, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and (request.is_ajax() or settings.DEBUG):
+            return func(*args, **kwargs)
+        return HttpResponseBadRequest
+        
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
@@ -203,10 +224,17 @@ def get_required(func):
         ...
 
     """    
-    def wrap(request, *args, **kwargs):
-        if request.method != 'GET':
-            return HttpResponseNotAllowed(['GET'])
-        return func(request, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and (request.method.upper() == 'GET'):
+            return func(*args, **kwargs)
+        return HttpResponseNotAllowed(['GET'])
+
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
@@ -221,10 +249,17 @@ def post_required(func):
         ...
 
     """    
-    def wrap(request, *args, **kwargs):
-        if request.method != 'POST':
-            return HttpResponseNotAllowed(['POST'])
-        return func(request, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and (request.method.upper() == 'POST'):
+            return func(*args, **kwargs)
+        return HttpResponseNotAllowed(['POST'])
+
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
@@ -239,10 +274,17 @@ def put_required(func):
         ...
 
     """    
-    def wrap(request, *args, **kwargs):
-        if request.method != 'PUT':
-            return HttpResponseNotAllowed(['PUT'])
-        return func(request, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and (request.method.upper() == 'PUT'):
+            return func(*args, **kwargs)
+        return HttpResponseNotAllowed(['PUT'])
+
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
@@ -257,10 +299,17 @@ def delete_required(func):
         ...
 
     """    
-    def wrap(request, *args, **kwargs):
-        if request.method != 'DELETE':
-            return HttpResponseNotAllowed(['DELETE'])
-        return func(request, *args, **kwargs)
+    def wrap(*args, **kwargs):
+        request = None
+        for arg in args:
+            if isinstance(arg, HttpRequest):
+                request = arg
+                break
+            
+        if request and (request.method.upper() == 'DELETE'):
+            return func(*args, **kwargs)
+        return HttpResponseNotAllowed(['DELETE'])
+
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
     wrap.__dict__.update(func.__dict__)
