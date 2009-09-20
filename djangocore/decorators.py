@@ -29,7 +29,8 @@ def staff_member_required(func):
           request.user.is_staff:
             return func(*args, **kwargs)
         
-        return HttpResponseForbidden
+        return HttpResponseForbidden("You must be a logged-in staff member " \
+          "to access this resource.", mimetype='text/plain: charset=utf-8')
         
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
@@ -72,10 +73,12 @@ def permission_required(perm, *permissions):
                 # Format the passed permissions with any kwargs and make sure
                 # that the user does have all indiciated permissions.
                 required_permissions = [p % kwargs for p in permissions]
-                if not request.user.has_perms(required_permissions):
+                if request.user.has_perms(required_permissions):
                     return func(*args, **kwargs)
             
-            return HttpResponseForbidden
+            return HttpResponseForbidden("You do not have the necessary " \
+              "permissions to access this resource.", \
+              mimetype='text/plain: charset=utf-8')
             
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
@@ -120,7 +123,9 @@ def get_model_from_kwargs(func=None, app_label_kwarg='app_label', \
     
             kwargs['model'] = get_model(app_label, module_name)
             if not model:
-                return HttpResponseBadRequest
+                return HttpResponseBadRequest("No model with the specified " \
+                  "app label and module name exists.", \
+                  mimetype='text/plain: charset=utf-8')
     
             return func(*args, **kwargs)
         
@@ -208,7 +213,8 @@ def ajax_required(func):
             
         if request and (request.is_ajax() or settings.DEBUG):
             return func(*args, **kwargs)
-        return HttpResponseBadRequest
+        return HttpResponseBadRequest("This URL only accepts AJAX requests.", \
+          mimetype='text/plain: charset=utf-8')
         
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
