@@ -16,5 +16,5 @@ if settings.DEBUG:
     from piston.emitters import Emitter
     for key, (emitter, ct) in Emitter.EMITTERS.items():
         # Replace the content type for all emitters with 'text/plain'.
-        Emitter.EMITTERS[key] = (emitter, 'text/plain')
+        Emitter.EMITTERS[key] = (emitter, 'text/plain; charset=utf-8')
             
