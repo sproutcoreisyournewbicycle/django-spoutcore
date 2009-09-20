@@ -27,6 +27,7 @@ def staff_member_required(func):
     
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
 
 def permission_required(perm, *permissions):
@@ -162,6 +163,7 @@ def get_emitter_format(func, emitter_format=''):
             return func(request, *args, **kwargs)
         wrap.__doc__ = func.__doc__
         wrap.__name__ = func.__name__
+        wrap.__dict__.update(func.__dict__)
         return wrap
 
     if func is None:
@@ -189,6 +191,7 @@ def ajax_required(func):
         return func(request, *args, **kwargs)
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
 
 def get_required(func):
@@ -206,6 +209,7 @@ def get_required(func):
         return func(request, *args, **kwargs)
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
 
 def post_required(func):
@@ -223,6 +227,7 @@ def post_required(func):
         return func(request, *args, **kwargs)
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
 
 def put_required(func):
@@ -240,6 +245,7 @@ def put_required(func):
         return func(request, *args, **kwargs)
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
 
 def delete_required(func):
@@ -257,4 +263,5 @@ def delete_required(func):
         return func(request, *args, **kwargs)
     wrap.__doc__ = func.__doc__
     wrap.__name__ = func.__name__
+    wrap.__dict__.update(func.__dict__)
     return wrap
