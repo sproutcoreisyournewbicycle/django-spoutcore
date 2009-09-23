@@ -15,7 +15,12 @@ primaryKey: 'pk'
 
 });
 
+SC.mixin({{ app_label }}.Generated{{ model_name }},
+/** @scope {{ app_label }}.{{ model_name }} */ {
+
 {% for option in meta %}
-{{ app_label }}.Generated{{ model_name }}.{{ option.name }} = {{ option.value }};
+{{ option.name }}: {{ option.value }}{% if not forloop.last %},{% endif %}
 {% endfor %}
+
+});
 {% endautoescape %}
