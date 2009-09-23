@@ -15,8 +15,10 @@ from djangocore.transform import transformer
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
-        make_option('-d', '--directory', default='', dest='directory',
+        make_option('-d', '--directory', default='sproutcore/', dest='directory',
             help='Specifies the output directory for the files.'),
+        make_option('-p', '--app-prefix', default='', dest='app_prefix',
+            help='Specifies a prefix to prepend to all SproutCore app names.'),
         make_option('-e', '--exclude', dest='exclude', action='append', default=[],
             help='App to exclude (use multiple --exclude to exclude multiple apps).'),
     )
@@ -27,20 +29,23 @@ class Command(BaseCommand):
     def handle(self, *app_labels, **options):
         project_name = os.environ['DJANGO_SETTINGS_MODULE'].split('.')[-2]
         directory = options.get('directory', None)
+        app_prefix = options.get('app_prefix', \
+          getattr(settings, 'SPROUTCORE_APP_PREFIX', ''))
         
-# TODO: ENFORCE directories that end in /
-
         # This part of the code used to be one line, until we decided to check
         # that SPROUTCORE_ROOT starts with a '/'. Now we have to do hula hoops!
         if not directory:
-            root = getattr(settings, 'SPROUTCORE_ROOT', '')
-            if root:
-                if not root.startswith('/'):
-                    raise ValueError, "SPROUTCORE_ROOT must be an absolute " \
-                      "path (and start with a '/')"
-                directory = root + 'frameworks/' + project_name
-            else:
-                directory = 'sproutcore/frameworks/' + project_name
+            directory = getattr(settings, 'SPROUTCORE_ROOT', '')
+            if directory and directory.startswith('/'):
+                raise ValueError, "SPROUTCORE_ROOT must be an absolute path " \
+                  "(and start with a '/')"
+        
+        # Make sure the specified directory ends with a '/' since it's a folder.
+        if directory and not directory.endswith('/'):
+            directory += '/'
+
+        # Create the full directory structure.
+        directory += 'frameworks/' + project_name
         
         exclude = options.get('exclude', [])
         excluded_apps = [get_app(app_label) for app_label in exclude]
@@ -98,7 +103,7 @@ class Command(BaseCommand):
                     os.makedirs(path)
                 os.chdir('frameworks/' + app_label)
                 
-                app_label = camelize(app_label)
+                app_label = app_prefix + camelize(app_label)
                 # Create the core.js file.
                 f = open('core.js', 'w')
                 rendered = render_to_string('djangocore/core.js', {
