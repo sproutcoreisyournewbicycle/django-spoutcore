@@ -16,6 +16,6 @@ primaryKey: 'pk'
 });
 
 {% for option in meta %}
-{{ app_label }}._{{ model_name }}.{{ option.name }} = {{ option.value }};
+{{ app_label }}.Generated{{ model_name }}.{{ option.name }} = {{ option.value }};
 {% endfor %}
 {% endautoescape %}
