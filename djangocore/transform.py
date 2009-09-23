@@ -41,7 +41,7 @@ class BaseTransformation(object):
     def get_name(self):
         # If the verbose name is an empty string, we fall back to the field
         # name.
-        return lcamelize(smart_str(self.field.verbose_name)) or \
+        return lcamelize(self.field.verbose_name) or \
           lcamelize(self.field.name)
 
     def get_record(self):
@@ -120,13 +120,42 @@ class BaseRelationshipTransformation(BaseTransformation):
         # If we are looking at the front side of the relationship though, we
         # want the model the field is related to.
         else:
-            ops = self.field.rel.to._meta
+            ops = self.field.related.parent_model._meta
         
         app_label, model_name = camelize(ops.app_label), camelize(ops.verbose_name)
         return '.'.join([app_label, model_name])
         
     def get_js_type(self):
         return r"'" + self.get_related_obj() + r"'"
+
+    def get_name(self):
+        if self.reverse:
+            # Get the camlized related_name for the field, since there is no
+            # field name to use.
+            return lcamelize(self.field.related.get_accessor_name())
+        
+        return super(BaseRelationshipTransformation, self).get_name()
+        
+    def get_attributes(self):
+        if self.reverse:
+            # Since this is the reverse side of a relationship, it doesn't make
+            # sense to have a lot of the attributes we normally use for a field.
+            attributes_dict = {
+                'djangoField': self.field.__class__.__name__,
+                'isMaster': False,
+                'inverse': lcamelize(self.field.verbose_name) or \
+                  lcamelize(self.field.name),
+            }
+        else:
+            attributes_dict = \
+              super(BaseRelationshipTransformation, self).get_attributes()
+
+            attributes_dict.update({
+                'isMaster': not self.reverse,
+                'inverse': lcamelize(self.field.related.get_accessor_name()),
+            })
+        
+        return attributes_dict
 
 class ToOneTransformation(BaseRelationshipTransformation):
     def get_acceptable_type(self):
@@ -151,10 +180,12 @@ class ModelTransformer(object):
         self._transformations[field_name] = \
           (transformation, acceptable_type, extra_attributes)
     
+    # We don't accept any extra_attributes since it usually doesn't make sense
+    # to put them on the reverse model's field.
     def register_reverse(self, field_name, acceptable_type='', \
-      extra_attributes=[], transformation=BaseTransformation):
+      transformation=BaseTransformation):
         self._reverse_transformations[field_name] = \
-          (transformation, acceptable_type, extra_attributes)
+          (transformation, acceptable_type)
 
     def unregister(self, field_name):
         del self._transformations[field_name]
@@ -186,11 +217,11 @@ class ModelTransformer(object):
         for field in reverse_fields:
             try:
                 field_name = field.__class__.__name__
-                Transformation, acceptable_type, extra_attributes \
+                Transformation, acceptable_type \
                   = self._reverse_transformations[field_name]
                 
                 t = Transformation(field, acceptable_type, \
-                  extra_attributes, reverse=True).get_field_data()
+                  [], reverse=True).get_field_data()
                 if t: fields.append(t)
             except KeyError:
                 # Got a custom field type, so we punt on it.
