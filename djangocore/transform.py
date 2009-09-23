@@ -143,6 +143,7 @@ class BaseRelationshipTransformation(BaseTransformation):
             attributes_dict = {
                 'djangoField': self.field.__class__.__name__,
                 'isMaster': False,
+                'key': self.field.related.get_accessor_name(),
                 'inverse': lcamelize(self.field.verbose_name) or \
                   lcamelize(self.field.name),
             }
