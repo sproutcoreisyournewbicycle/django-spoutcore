@@ -132,7 +132,6 @@ class Command(BaseCommand):
                     data.update({
                         'app_label': app_label,
                         'model_name': model_name,
-                        'pk_field': model._meta.pk.name,
                     })
                     rendered = render_to_string('djangocore/generated.js', data)
                     
