@@ -5,7 +5,7 @@ from django.forms import model_to_dict
 from django.forms.models import modelform_factory
 from django.conf import settings
 from django.http import HttpResponse
-
+from django.core.serializers import serialize
 from piston.handler import BaseHandler
  
 from djangocore.utils import EmitterHttpResponse
@@ -20,7 +20,8 @@ class LengthHandler(BaseHandler):
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
-    def read(self, request, model):
+    @get_emitter_format
+    def read(self, request, model, emitter_format):
         return model._default_manager.count()
 
 class RangeHandler(BaseHandler):
@@ -68,7 +69,10 @@ class RangeHandler(BaseHandler):
               status=400, format=emitter_format)
             return resp
 
-        return model._default_manager.values().order_by(*ordering)[start:end]
+        # Serialize the models into simple python objects, letting piston's
+        # serializers do the heavy lifting.
+        return serialize('python', \
+          model._default_manager.order_by(*ordering)[start:end])
 
 class BulkHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
@@ -98,7 +102,10 @@ class BulkHandler(BaseHandler):
               status=400, format=emitter_format)
             return resp
         
-        return model._default_manager.values().filter(pk__in=pk_list)
+        # Serialize the models into simple python objects, letting piston's
+        # serializers do the heavy lifting.
+        return serialize('python', \
+          model._default_manager.values().filter(pk__in=pk_list))
         
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
@@ -136,7 +143,9 @@ class BulkHandler(BaseHandler):
               status=400, format=emitter_format)
             return resp
         
-        return objects.values()
+        # Serialize the models into simple python objects, letting piston's
+        # serializers do the heavy lifting.
+        return serialize('python', objects)
         
     @staff_member_required
     @permission_required('%(app_label)s.delete_%(module_name)s')
@@ -171,7 +180,11 @@ class ObjectHandler(BaseHandler):
             resp = EmitterHttpResponse(request, self, ret, \
               status=400, format=emitter_format)
             return resp
-        return model._default_manager.values().get(pk__in=pk)
+
+        # Serialize the models into simple python objects, letting piston's
+        # serializers do the heavy lifting.
+        return serialize('python', \
+          model._default_manager.values().get(pk__in=pk))
     
     @staff_member_required
     @permission_required('%(app_label)s.add_%(module_name)s')
@@ -188,7 +201,7 @@ class ObjectHandler(BaseHandler):
             return resp
 
         obj = form.save()
-        return model_to_dict(obj)
+        return serialize('python', obj)
     
     @staff_member_required
     @permission_required('%(app_label)s.change_%(module_name)s')
@@ -233,7 +246,7 @@ class ObjectHandler(BaseHandler):
             return resp
 
         obj = form.save()
-        return model_to_dict(obj)
+        return serialize('python', obj)
 
     @staff_member_required
     @permission_required('%(app_label)s.delete_%(module_name)s')
