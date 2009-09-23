@@ -27,11 +27,11 @@ class LengthHandler(BaseHandler):
 class RangeHandler(BaseHandler):
     """
     Returns a range of objects ordered by a given set of fields. Returns
-    no more than settings.MAX_OBJECTS_PER_REQUEST number objects. If
-    more than the maximum are ohasked for, a 400 Bad Request will be
-    returned.
+    no more than settings.SPROUTCORE_MAX_OBJECTS_PER_REQUEST number
+    objects. If more than the maximum are ohasked for, a 400 Bad Request
+    will be returned.
     
-    MAX_OBJECTS_PER_REQUEST defaults to 300 if not specified.
+    SPROUTCORE_MAX_OBJECTS_PER_REQUEST defaults to 300 if not specified.
     
     GET Parameters::
         
