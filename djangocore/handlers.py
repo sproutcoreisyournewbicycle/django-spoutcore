@@ -58,13 +58,12 @@ class RangeHandler(BaseHandler):
 
         ordering = request.GET.get('ordering', 'pk').split(',')
         start = int(request.GET.get('start', 0))
-        end = int(request.GET.get('end', max_objects_per_request))
+        length = int(request.GET.get('length', max_objects_per_request))
 
         # Client asked for too many objects! Bad client! Bad client!
-        if end - start > max_objects_per_request:
+        if length > max_objects_per_request:
             ret = {'message': "Requests may not specify more than %d records " \
-              "to return (asked for %d)." % (max_objects_per_request, \
-              end - start)}
+              "to return (asked for %d)." % (max_objects_per_request, length)}
             resp = EmitterHttpResponse(request, self, ret, \
               status=400, format=emitter_format)
             return resp
@@ -72,7 +71,7 @@ class RangeHandler(BaseHandler):
         # Serialize the models into simple python objects, letting piston's
         # serializers do the heavy lifting.
         return serialize('python', \
-          model._default_manager.order_by(*ordering)[start:end])
+          model._default_manager.order_by(*ordering)[start:start + length])
 
 class BulkHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
