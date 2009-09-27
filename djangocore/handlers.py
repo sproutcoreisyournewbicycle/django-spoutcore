@@ -17,8 +17,8 @@ __all__ = ['LengthHandler', 'RangeHandler', 'BulkHandler', 'ObjectHandler']
 class LengthHandler(BaseHandler):
     allowed_methods = ('GET',)
 
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def read(self, request, model, emitter_format):
@@ -48,8 +48,8 @@ class RangeHandler(BaseHandler):
 
     allowed_methods = ('GET',)
 
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def read(self, request, model, emitter_format):
@@ -76,8 +76,8 @@ class RangeHandler(BaseHandler):
 class BulkHandler(BaseHandler):
     allowed_methods = ('GET', 'PUT', 'DELETE')
     
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def read(self, request, model, emitter_format):
@@ -104,10 +104,10 @@ class BulkHandler(BaseHandler):
         # Serialize the models into simple python objects, letting piston's
         # serializers do the heavy lifting.
         return serialize('python', \
-          model._default_manager.values().filter(pk__in=pk_list))
+          model._default_manager.filter(pk__in=pk_list))
         
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def update(self, request, model, emitter_format):
@@ -123,7 +123,7 @@ class BulkHandler(BaseHandler):
         # it does, you'll throw an IntegrityError if there is another object
         # with the same pk, since pks must be unique. To make things easy, we go
         # ahead and remove the primary key field from the input automatically.
-        attrs = request.PUT
+        attrs = dict([(str(k), str(v)) for k, v in request.PUT.items()])
         attrs.pop(model._meta.pk.name, None)
         
         try:
@@ -137,7 +137,7 @@ class BulkHandler(BaseHandler):
             return resp
         except (ValueError, TypeError, IntegrityError), error:
             ret = {'message': "Request specified inappropriate data for a " \
-              "field: %s" % msg}
+              "field: %s" % error}
             resp = EmitterHttpResponse(request, self, ret, \
               status=400, format=emitter_format)
             return resp
@@ -146,8 +146,8 @@ class BulkHandler(BaseHandler):
         # serializers do the heavy lifting.
         return serialize('python', objects)
         
-    @staff_member_required
-    @permission_required('%(app_label)s.delete_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.delete_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def delete(self, request, model, emitter_format):
@@ -167,8 +167,8 @@ class BulkHandler(BaseHandler):
 class ObjectHandler(BaseHandler):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def read(self, request, model, emitter_format):
@@ -180,13 +180,20 @@ class ObjectHandler(BaseHandler):
               status=400, format=emitter_format)
             return resp
 
+        try:
+            obj = model._default_manager.get(pk=pk[0])
+        except model.DoesNotExist, error:
+            ret = {'message': "No object with the given pk exists (asked for " \
+              "pk %s)." % pk[0]}
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=404, format=emitter_format)
+            return resp
         # Serialize the models into simple python objects, letting piston's
         # serializers do the heavy lifting.
-        return serialize('python', \
-          model._default_manager.values().get(pk__in=pk))
+        return serialize('python', [obj])[0]
     
-    @staff_member_required
-    @permission_required('%(app_label)s.add_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.add_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def create(self, request, model, emitter_format):
@@ -200,10 +207,10 @@ class ObjectHandler(BaseHandler):
             return resp
 
         obj = form.save()
-        return serialize('python', obj)
+        return serialize('python', [obj])[0]
     
-    @staff_member_required
-    @permission_required('%(app_label)s.change_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.change_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def update(self, request, model, emitter_format):
@@ -227,12 +234,12 @@ class ObjectHandler(BaseHandler):
             return resp
 
         try:
-            obj = model._default_manager.values().get(pk__in=pk)
-        except model.DoesNotExist, msg:
+            obj = model._default_manager.get(pk=pk[0])
+        except model.DoesNotExist, error:
             ret = {'message': "No object with the given pk exists (asked for " \
               "pk %s)." % pk[0]}
             resp = EmitterHttpResponse(request, self, ret, \
-              status=400, format=emitter_format)
+              status=404, format=emitter_format)
             return resp
 
         ModelForm = modelform_factory(model)
@@ -245,10 +252,10 @@ class ObjectHandler(BaseHandler):
             return resp
 
         obj = form.save()
-        return serialize('python', obj)
+        return serialize('python', [obj])[0]
 
-    @staff_member_required
-    @permission_required('%(app_label)s.delete_%(module_name)s')
+#    @staff_member_required
+#    @permission_required('%(app_label)s.delete_%(module_name)s')
     @get_model_from_kwargs
     @get_emitter_format
     def delete(self, request, model, emitter_format):
@@ -264,7 +271,15 @@ class ObjectHandler(BaseHandler):
             resp = EmitterHttpResponse(request, self, ret, \
               status=400, format=emitter_format)
             return resp
-        model._default_manager.get(pk__in=pk).delete()
+
+        try:
+            model._default_manager.get(pk=pk[0]).delete()
+        except model.DoesNotExist, error:
+            ret = {'message': "No object with the given pk exists (asked for " \
+              "pk %s)." % pk[0]}
+            resp = EmitterHttpResponse(request, self, ret, \
+              status=404, format=emitter_format)
+            return resp
 
         # Successful delete requests, return an emtpy body, as per RFC2616
         return HttpResponse('', mimetype='text/plain; charset=utf-8', \
