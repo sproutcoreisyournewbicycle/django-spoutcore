@@ -5,13 +5,18 @@ import os
 # Django dependencies.
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import get_app, get_apps, get_models, get_model
+from django.db.models import get_app, get_apps, get_models, get_model, Model
 from django.template.loader import render_to_string
 from django.conf import settings
 
 # Intra-app dependencies.
 from djangocore.utils import camelize, underscore
-from djangocore.transform import transformer
+from djangocore.transform import *
+
+try:
+    from appengine_django.models import BaseModel
+except:
+    BaseModel = None
 
 class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -19,8 +24,8 @@ class Command(BaseCommand):
             help='Specifies the output directory for the files.'),
         make_option('-p', '--app-prefix', default='', dest='app_prefix',
             help='Specifies a prefix to prepend to all SproutCore app names.'),
-        make_option('-e', '--exclude', dest='exclude', action='append', default=[],
-            help='App to exclude (use multiple --exclude to exclude multiple apps).'),
+        make_option('-e', '--exclude', dest='exclude', action='append', 
+            default=[], help='App to exclude (use multiple --exclude to exclude multiple apps).'),
     )
     help = 'Generates valid SproutCore model schemas for all apps in \
             INSTALLED_APPS. Subclassed models will not be overwritten.'
@@ -48,7 +53,15 @@ class Command(BaseCommand):
         directory += 'frameworks/' + project_name
         
         exclude = options.get('exclude', [])
-        excluded_apps = [get_app(app_label) for app_label in exclude]
+        
+        try:
+            # Exclude the AppEnginer helper, if it's installed, since we don't
+            # want to include the BaseModel class in our transformations.
+            excluded_apps = [get_app('appengine_django')]
+        except ImproperlyConfigured:
+            excluded_apps = []
+        
+        excluded_apps += [get_app(app_label) for app_label in exclude]
 
         if len(app_labels) == 0:
             app_list = dict([(app, None) for app in get_apps() if app not in excluded_apps])
@@ -118,9 +131,30 @@ class Command(BaseCommand):
                     file_name = underscore(model._meta.module_name) + ".js"
                     generated_file_name = '_generated/' + file_name
                     
-                    model_name = camelize(model._meta.verbose_name)
+                    # Make sure BaseModel was imported before we test with it.
+                    if BaseModel and issubclass(model, BaseModel):
+                        # AppEngine doesn't support meta options such as
+                        # verbose_name, so we have to fall back to module_name.
+                        model_name = camelize(model._meta.module_name)
+                        data = appengine_transformer.get_model_data(model)
+
+                    elif issubclass(model, Model):
+                        # Just a regular Django model. Nothing special here.
+                        model_name = camelize(model._meta.verbose_name)                        
+                        data = django_transformer.get_model_data(model)
     
-                    # If the subclassed file already exists, then we don't touch it.
+                    # Write the generated file to disk.
+                    f = open(generated_file_name, 'w')
+                    data.update({
+                        'app_label': app_label,
+                        'model_name': model_name,
+                    })
+                    rendered = render_to_string('djangocore/generated.js', data)
+                    
+                    f.write(rendered)
+                    f.close()
+
+                    # If the user file already exists, then we don't change it.
                     if not os.path.exists(file_name):
                         f = open(file_name, 'w')
                         rendered = render_to_string('djangocore/user.js', {
@@ -131,20 +165,7 @@ class Command(BaseCommand):
                         
                         f.write(rendered)
                         f.close()
-    
-                    # Write the generated file to disk regardless of whether it
-                    # already exists or not.
-                    f = open(generated_file_name, 'w')
-                    data = transformer.get_model_data(model)
-                    data.update({
-                        'app_label': app_label,
-                        'model_name': model_name,
-                    })
-                    rendered = render_to_string('djangocore/generated.js', data)
                     
-                    f.write(rendered)
-                    f.close()
-                
                 # Move back out to the main directory. 
                 os.chdir('../..')
 
