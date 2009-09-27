@@ -59,8 +59,10 @@ def camelize(string):
     be converted to "WhoSOnline"
     
     """
-    string = smart_str(string)
-    return ''.join(w[0].upper() + w[1:] for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', string).split(' ') if w)
+    if string:
+        string = smart_str(string)
+        string = ''.join(w[0].upper() + w[1:] for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', string).split(' ') if w)
+    return string
 
 def lcamelize(string):
     """
