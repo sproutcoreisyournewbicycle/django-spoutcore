@@ -3,12 +3,12 @@ from django.utils.encoding import smart_str
 
 # Intra-app dependencies.
 from djangocore.utils import camelize, lcamelize
-from djangocore.transform.base import BaseFieldTransformation, \
+from djangocore.transform.base import BaseFieldTransformer, \
   BaseModelTransformer
 
 
 
-class AppEngineFieldTransformation(BaseFieldTransformation):
+class AppEngineFieldTransformer(BaseFieldTransformer):
     """Renders a AppEngine model field as a SproutCore model field."""            
     def should_render(self):
         return True
@@ -37,7 +37,7 @@ class AppEngineFieldTransformation(BaseFieldTransformation):
         attributes_dict = self.get_field_attrs_for(attributes)
         return attributes_dict
 
-class AppEngineUnindexedFieldTransformation(AppEngineFieldTransformation):
+class AppEngineUnindexedFieldTransformer(AppEngineFieldTransformer):
     """
     Some of App Engine's fields can't be indexed, but they still set
     their indexed attribute to True, so we use a special field
@@ -45,13 +45,13 @@ class AppEngineUnindexedFieldTransformation(AppEngineFieldTransformation):
     
     """
     def get_attributes(self):
-        attributes_dict = super(AppEngineUnindexedFieldTransformation, self).get_attributes()
+        attributes_dict = super(AppEngineUnindexedFieldTransformer, self).get_attributes()
         attributes_dict.update(
             hasServerIndex = False,
         )
         return attributes_dict
     
-class AppEngineRelationshipTransformation(AppEngineFieldTransformation):
+class AppEngineRelationshipTransformer(AppEngineFieldTransformer):
     def get_acceptable_type(self):
         if self.reverse:
             return 'SC.RecordArray %s' % self.get_related_obj()
@@ -86,7 +86,7 @@ class AppEngineRelationshipTransformation(AppEngineFieldTransformation):
             related_field = getattr(self.field._model, self.field._prop_name)
             return lcamelize(related_field.collection_name)
         
-        return super(AppEngineRelationshipTransformation, self).get_name()
+        return super(AppEngineRelationshipTransformer, self).get_name()
         
     def get_attributes(self):
         if self.reverse:
@@ -105,7 +105,7 @@ class AppEngineRelationshipTransformation(AppEngineFieldTransformation):
             
         else:
             attributes_dict = \
-              super(AppEngineRelationshipTransformation, self).get_attributes()
+              super(AppEngineRelationshipTransformer, self).get_attributes()
 
             attributes_dict.update(
                 isMaster = True,
@@ -116,7 +116,7 @@ class AppEngineRelationshipTransformation(AppEngineFieldTransformation):
 
 class AppEngineModelTransformer(BaseModelTransformer):
     def get_default_transformation(self):
-        return AppEngineFieldTransformation
+        return AppEngineFieldTransformer
 
     def get_forward_fields(self, model):
         return model._meta.local_fields
@@ -138,12 +138,12 @@ class AppEngineModelTransformer(BaseModelTransformer):
             if name not in forward_field_names and \
               field_name in self._reverse_transformations :
                 try:
-                    Transformation, acceptable_type, extra_attributes \
+                    Transformer, acceptable_type, extra_attributes \
                       = self._reverse_transformations[field_name]
                 except KeyError:
                     pass # Got a custom field type, so we punt on it.
                 else:                
-                    t = Transformation(field, acceptable_type, \
+                    t = Transformer(field, acceptable_type, \
                       extra_attributes, reverse=True).get_field_data()
                     if t: fields.append(t)
         return fields
@@ -181,7 +181,7 @@ transformer.register('PhoneNumberProperty', 'String')
 transformer.register('PostalAddressProperty', 'String')
 transformer.register('GeoPtProperty', 'String (latitude, longitude)')
 transformer.register('IMProperty', 'String (protocol, handle)')
-transformer.register('TextProperty', 'String', transformation=AppEngineUnindexedFieldTransformation)
+transformer.register('TextProperty', 'String', transformation=AppEngineUnindexedFieldTransformer)
 
 # Number fields
 transformer.register('FloatProperty', 'Number')
@@ -201,10 +201,10 @@ transformer.register('StringListProperty', 'Array of Strings')
 transformer.register('ByteStringProperty', 'Array of integers (0-255)')
 transformer.register('ListProperty', 'Array of %s') # TODO: !!! VARIES !!!
 transformer.register('BlobProperty', 'Array of integers (0-255)', \
-  transformation=AppEngineUnindexedFieldTransformation)
+  transformation=AppEngineUnindexedFieldTransformer)
 
 # Relationship fields
-transformer.register('ReferenceProperty', transformation=AppEngineRelationshipTransformation)
-transformer.register('SelfReferenceProperty', transformation=AppEngineRelationshipTransformation)
+transformer.register('ReferenceProperty', transformation=AppEngineRelationshipTransformer)
+transformer.register('SelfReferenceProperty', transformation=AppEngineRelationshipTransformer)
 transformer.register_reverse('_ReverseReferenceProperty', \
-  transformation=AppEngineRelationshipTransformation)
+  transformation=AppEngineRelationshipTransformer)

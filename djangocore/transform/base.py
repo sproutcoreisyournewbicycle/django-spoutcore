@@ -7,11 +7,11 @@ from djangocore.utils import camelize, lcamelize, SproutCoreJSONEncoder
 
 json = SproutCoreJSONEncoder()
 
-class BaseFieldTransformation(object):
+class BaseFieldTransformer(object):
     """Renders a Django model field as a SproutCore model field."""
     def __init__(self, field, acceptable_type='', extra_attributes=[], \
       reverse=False):
-        super(BaseFieldTransformation, self).__init__()
+        super(BaseFieldTransformer, self).__init__()
         self.field = field
         self.acceptable_type = acceptable_type
         self.extra_attributes = extra_attributes
@@ -131,12 +131,12 @@ class BaseModelTransformer(object):
         for field in self.get_forward_fields(model):
             field_name = field.__class__.__name__
             try:
-                Transformation, acceptable_type, extra_attributes \
+                Transformer, acceptable_type, extra_attributes \
                   = self._transformations[field_name]
             except KeyError:
                 pass # Got a custom field type, so we punt on it.
             else:                
-                t = Transformation(field, acceptable_type, \
+                t = Transformer(field, acceptable_type, \
                   extra_attributes).get_field_data()
                 if t: fields.append(t)
         return fields
@@ -149,12 +149,12 @@ class BaseModelTransformer(object):
         for field in self.get_reverse_fields(model):
             field_name = field.__class__.__name__
             try:
-                Transformation, acceptable_type, extra_attributes \
+                Transformer, acceptable_type, extra_attributes \
                   = self._reverse_transformations[field_name]
             except KeyError:
                 pass # Got a custom field type, so we punt on it.
             else:                
-                t = Transformation(field, acceptable_type, \
+                t = Transformer(field, acceptable_type, \
                   extra_attributes, reverse=True).get_field_data()
                 if t: fields.append(t)
         return fields

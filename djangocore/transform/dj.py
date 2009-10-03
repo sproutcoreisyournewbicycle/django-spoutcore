@@ -3,10 +3,10 @@ from django.utils.encoding import smart_str
 
 # Intra-app dependencies.
 from djangocore.utils import camelize, lcamelize
-from djangocore.transform.base import BaseFieldTransformation, \
+from djangocore.transform.base import BaseFieldTransformer, \
   BaseModelTransformer
 
-class DjangoFieldTransformation(BaseFieldTransformation):
+class DjangoFieldTransformer(BaseFieldTransformer):
     """Renders a Django model field as a SproutCore model field."""            
     def should_render(self):
         return not self.field.primary_key
@@ -43,12 +43,12 @@ class DjangoFieldTransformation(BaseFieldTransformation):
         return attributes_dict
 
     def get_comments(self):
-        comment_list = super(DjangoFieldTransformation, self).get_comments()
+        comment_list = super(DjangoFieldTransformer, self).get_comments()
         if self.field.help_text:
             comment_list += [smart_str(self.field.help_text)]
         return comment_list
     
-class DjangoRelationshipTransformation(DjangoFieldTransformation):
+class DjangoRelationshipTransformer(DjangoFieldTransformer):
     def get_related_obj(self):
         if self.reverse:
             # We are looking at the reverse side of the relationship, so we want
@@ -73,7 +73,7 @@ class DjangoRelationshipTransformation(DjangoFieldTransformation):
             # field name to use from the reverse side of the relationship.
             return lcamelize(self.field.related.get_accessor_name())
         
-        return super(DjangoRelationshipTransformation, self).get_name()
+        return super(DjangoRelationshipTransformer, self).get_name()
         
     def get_attributes(self):
         if self.reverse:
@@ -88,7 +88,7 @@ class DjangoRelationshipTransformation(DjangoFieldTransformation):
             
         else:
             attributes_dict = \
-              super(DjangoRelationshipTransformation, self).get_attributes()
+              super(DjangoRelationshipTransformer, self).get_attributes()
 
             attributes_dict.update(
                 isMaster = True,
@@ -97,13 +97,13 @@ class DjangoRelationshipTransformation(DjangoFieldTransformation):
         
         return attributes_dict
 
-class DjangoToOneTransformation(DjangoRelationshipTransformation):
+class DjangoToOneTransformer(DjangoRelationshipTransformer):
     def get_acceptable_type(self):
         return self.get_related_obj()
     def get_record(self):
         return 'SC.Record.toOne'
     
-class DjangoToManyTransformation(DjangoRelationshipTransformation):
+class DjangoToManyTransformer(DjangoRelationshipTransformer):
     def get_acceptable_type(self):
         return 'SC.RecordArray %s' % self.get_related_obj()
     def get_record(self):
@@ -111,7 +111,7 @@ class DjangoToManyTransformation(DjangoRelationshipTransformation):
 
 class DjangoModelTransformer(BaseModelTransformer):
     def get_default_transformation(self):
-        return DjangoFieldTransformation
+        return DjangoFieldTransformer
 
     def get_forward_fields(self, model):
         ops = model._meta
@@ -182,11 +182,11 @@ transformer.register('NullBooleanField', 'Boolean')
 transformer.register('BooleanField', 'Boolean')
 
 # Relationship fields
-transformer.register('OneToOneField', transformation=DjangoToOneTransformation)
-transformer.register('ForeignKey', transformation=DjangoToOneTransformation)
-transformer.register('ManyToManyField', transformation=DjangoToManyTransformation)
-transformer.register_reverse('ForeignKey', transformation=DjangoToManyTransformation)
+transformer.register('OneToOneField', transformation=DjangoToOneTransformer)
+transformer.register('ForeignKey', transformation=DjangoToOneTransformer)
+transformer.register('ManyToManyField', transformation=DjangoToManyTransformer)
+transformer.register_reverse('ForeignKey', transformation=DjangoToManyTransformer)
 transformer.register_reverse('ManyToManyField', \
-  transformation=DjangoToManyTransformation)
+  transformation=DjangoToManyTransformer)
 transformer.register_reverse('OneToOneField', \
-  transformation=DjangoToOneTransformation)
+  transformation=DjangoToOneTransformer)
