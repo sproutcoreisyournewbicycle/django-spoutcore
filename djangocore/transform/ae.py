@@ -2,7 +2,7 @@
 from django.utils.encoding import smart_str
 
 # Intra-app dependencies.
-from djangocore.utils import camelize, lcamelize
+from djangocore.utils import camelize, lcamelize, splitwords
 from djangocore.transform.base import BaseFieldTransformer, \
   BaseModelTransformer
 
@@ -150,21 +150,11 @@ class AppEngineModelTransformer(BaseModelTransformer):
 
     def get_meta(self, model):
         ops = model._meta
-        
-        # Let's split the camelized model name into real words!
-        mname = list(ops.object_name.replace('_',' '))
-        vname = [mname.pop(0)]
-        while mname:
-            c, v = mname.pop(0), vname[-1]
-            if c.isupper() and v.islower():
-                vname.append(' ')
-            vname.append(c)
-        verbose_name = ''.join(vname).strip().title()
 
         meta_dict = dict(
             transformedFrom = 'AppEngine',
             modelClass = '.'.join([ops.app_label, ops.module_name]),
-            verboseName = verbose_name,
+            verboseName = splitwords(ops.object_name).title(),
         )
         
         return meta_dict

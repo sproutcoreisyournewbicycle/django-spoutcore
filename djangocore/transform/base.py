@@ -1,11 +1,11 @@
 # Django dependencies.
 from django.db.models.fields import NOT_PROVIDED
-#???from django.utils.simplejson import json #???
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils import simplejson
 
 # Intra-app dependencies.
-from djangocore.utils import camelize, lcamelize, SproutCoreJSONEncoder
+from djangocore.utils import camelize, lcamelize, deconstruct
 
-json = SproutCoreJSONEncoder()
 
 class BaseFieldTransformer(object):
     """Renders a Django model field as a SproutCore model field."""
@@ -91,7 +91,11 @@ class BaseFieldTransformer(object):
                 'name': self.get_name(),
                 'record': self.get_record(),
                 'js_type': self.get_js_type(),
-                'attributes': json.encode(self.get_attributes())
+                'attributes': simplejson.dumps(
+                    deconstruct(self.get_attributes()),
+                    cls = DjangoJSONEncoder,
+                    ensure_ascii = False
+                )
             }
 
 class BaseModelTransformer(object):
@@ -170,6 +174,7 @@ class BaseModelTransformer(object):
     def get_model_data(self, model): 
         return {
             'generated_fields': self.generate_fields(model),
-            'meta': [{'name': key , 'value': json.encode(value)} for \
-              key, value in self.get_meta(model).items()],
+            'meta': [{'key': k, 'value': simplejson.dumps(deconstruct(v),
+                cls=DjangoJSONEncoder, ensure_ascii=False)} for k, v in
+                self.get_meta(model).items()],
         }

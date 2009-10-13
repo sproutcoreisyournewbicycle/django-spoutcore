@@ -20,3 +20,12 @@ class Choice(models.Model):
     
     def __unicode__(self):
         return self.answer
+
+
+from djangocore.api.base import site
+from djangocore.api.dj import DjangoModelResource as ModelResource
+try:
+    site.register(Poll, ModelResource)
+    site.register(Choice, ModelResource)
+except:
+    pass

@@ -1,55 +1,25 @@
 import re
-from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
-from django.conf import settings
-from django.utils.functional import Promise
-from django.utils.encoding import smart_str
+import decimal
 
+from django.utils.encoding import force_unicode
 
-try:
-    from piston.emitters import Emitter
-    from piston.handler import typemapper
-
-    class EmitterHttpResponse(HttpResponse):
-        """
-        An HttpResponse object that emits its content acording to the
-        given format. Defaults to emitting `json`. Useful for when you
-        want to return a response with encoded contents, that doesn't
-        have a HTTP 200 status code.
-        
-        """
-        def __init__(self, request, handler, content='', mimetype=None, \
-          status=None, content_type=None, format='json'):
-    
-            emitter, mimetype = Emitter.get(format)
-            if content:
-                srl = emitter(content, typemapper, handler, handler.fields, \
-                  handler.is_anonymous)
-                content = srl.render(request)                
-    
-            super(EmitterHttpResponse, self).__init__(content, mimetype, \
-              status, content_type)
-
-except ImportError:
-    pass
-    
-
-class SproutCoreJSONEncoder(DjangoJSONEncoder):
+def deconstruct(item):
     """
-    JSONEncoder subclass that knows how to deal with Django translation
-    objects.
+    Recursively loops through the item's children, converting them all
+    to python types, falling back to calling Django's `force_unicode`.
+
     """
-    def default(self, o):
-        if isinstance(o, Promise):
-            return smart_str(o)
-
-        try:
-            return super(SproutCoreJSONEncoder, self).default(o)
-
-        # If we get something that can't be encoded, then we just encode None.
-        except TypeError:
-            return None
-
+    if isinstance(item, dict):
+        return dict([(k, deconstruct(v)) for k, v in item.iteritems()])
+    elif isinstance(item, decimal.Decimal):
+        return str(item)
+    elif hasattr(item, '__iter__'):
+        return [deconstruct(v) for v in item]
+    elif callable(item):
+        return None
+    else:
+        return force_unicode(item, strings_only=True)
+ 
 def camelize(string):
     """
     Returns given string as CamelCased.
@@ -60,7 +30,7 @@ def camelize(string):
     
     """
     if string:
-        string = smart_str(string)
+        string = force_unicode(string)
         string = ''.join(w[0].upper() + w[1:] for w in re.sub('[^A-Z^a-z^0-9^:]+', ' ', string).split(' ') if w)
     return string
 
@@ -88,8 +58,27 @@ def underscore(string):
     friendly URLs.
     
     """
-    string = smart_str(string)
+    string = force_unicode(string)
     return  re.sub('[^A-Z^a-z^0-9^\/]+','_', \
             re.sub('([a-z\d])([A-Z])','\\1_\\2', \
             re.sub('([A-Z]+)([A-Z][a-z])','\\1_\\2', re.sub('::', '/',string)))).lower()
+
+def splitwords(string):
+    """Split camelized or underscored names into distinct words."""
+    cam = list(string.replace('_',' '))
+    uncam = [cam.pop(0)]
+    while cam:
+        c, u = cam.pop(0), uncam[-1]
+        if c.isupper() and u.islower():
+            uncam.append(' ')
+        uncam.append(c)
+    return ''.join(uncam).strip()
+    
+
+
+
+
+
+
+
 
