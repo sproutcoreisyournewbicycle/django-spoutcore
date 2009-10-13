@@ -168,7 +168,7 @@ class AppEngineModelResource(BaseModelResource):
               
         qs = self.get_query_set(request)
         qs = qs.filter('__key__ IN', pk_list)
-        return self.serialize_models(qs.fetch(self.max_num_objects))
+        return self.serialize_models(qs.fetch(self.max_objects))
 
     def create(self, request):
         data = request.data
