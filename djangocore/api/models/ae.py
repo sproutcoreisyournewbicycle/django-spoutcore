@@ -168,6 +168,10 @@ class AppEngineModelResource(BaseModelResource):
               
         qs = self.get_query_set(request)
         qs = qs.filter('__key__ IN', pk_list)
+        
+        # TODO: Return a 404 if no objects were found, and return only return
+        # lists when more than 1 pks were requested (this should *not* be based
+        # on how many we find though...)
         return self.serialize_models(qs.fetch(self.max_objects))
 
     def create(self, request):
