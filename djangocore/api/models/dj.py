@@ -3,6 +3,7 @@ from django.core.exceptions import FieldError
 from django.db.models.query import QuerySet
 from django.http import HttpResponse
 from django.forms.models import modelform_factory
+from django.shortcuts import get_object_or_404
 
 # Intra-app dependencies.
 from djangocore.api.models.base import BaseModelResource
