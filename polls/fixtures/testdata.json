@@ -1,0 +1,55 @@
+[
+    {
+        "pk": 1, 
+        "model": "polls.poll", 
+        "fields": {
+            "question": "What color are your socks?", 
+            "slug": "sock-color"
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "polls.choice", 
+        "fields": {
+            "answer": "Blue", 
+            "votes": 0, 
+            "poll": 1
+        }
+    }, 
+    {
+        "pk": 2, 
+        "model": "polls.choice", 
+        "fields": {
+            "answer": "Red", 
+            "votes": 0, 
+            "poll": 1
+        }
+    }, 
+    {
+        "pk": 3, 
+        "model": "polls.choice", 
+        "fields": {
+            "answer": "Green", 
+            "votes": 0, 
+            "poll": 1
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "polls.choice", 
+        "fields": {
+            "answer": "White", 
+            "votes": 0, 
+            "poll": 1
+        }
+    }, 
+    {
+        "pk": 5, 
+        "model": "polls.choice", 
+        "fields": {
+            "answer": "Gray", 
+            "votes": 0, 
+            "poll": 1
+        }
+    }
+]
