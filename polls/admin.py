@@ -8,8 +8,7 @@ class ChoiceInline(admin.TabularInline):
 
 class PollAdmin(admin.ModelAdmin):
     search_fields = ('question',)
-    list_display = ('question', 'author', 'pub_date',)
-    list_filter = ('author', 'pub_date')
-    inlines = [ChoiceInline]
+    list_display = ('question',)
+    inlines = (ChoiceInline,)
     prepopulated_fields = {"slug": ("question",)}
 admin.site.register(Poll, PollAdmin)
